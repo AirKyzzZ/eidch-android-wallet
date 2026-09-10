@@ -3,8 +3,6 @@ package ch.admin.foitt.wallet.feature.qr.presentation.qrscan
 import androidx.activity.enableEdgeToEdge
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,6 +36,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
@@ -57,6 +56,7 @@ import ch.admin.foitt.wallet.platform.scaffold.presentation.TopBarBackArrow
 import ch.admin.foitt.wallet.platform.scaffold.presentation.TopBarRoundButton
 import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.platform.utils.TestTags
+import ch.admin.foitt.wallet.platform.utils.periodicLiveRegion
 import ch.admin.foitt.wallet.theme.FadingVisibility
 import ch.admin.foitt.wallet.theme.LocalIsInDarkTheme
 import ch.admin.foitt.wallet.theme.Sizes
@@ -94,7 +94,7 @@ fun QrScannerScreen(
         }
     }
 
-    if (viewModel.isProximityEngagementEnabled) {
+    if (viewModel.isBluetoothPermissionRequired.collectAsStateWithLifecycle().value) {
         BluetoothStateScaffold(
             bluetoothState = viewModel.bluetoothState.collectAsStateWithLifecycle(),
             onBluetoothStateChanged = { viewModel.updateBluetoothState(context) },
@@ -264,7 +264,7 @@ private fun InfoBox(
             QrInfoState.Empty -> {}
             QrInfoState.Hint -> QrToastHint(onClose = onClose)
             QrInfoState.InvalidCredentialOffer -> QrToastInvalidCredentialOffer(onClose = onClose)
-            QrInfoState.Loading -> LoadingIndicator(modifier)
+            QrInfoState.Loading -> LoadingIndicator()
             QrInfoState.NetworkError -> QrToastNetworkError(onClose = onClose)
             QrInfoState.InvalidPresentation -> QrToastInvalidPresentation(onClose = onClose)
             QrInfoState.ExpiredCredentialOffer -> QrToastExpiredCredentialOffer(onClose = onClose)
@@ -342,21 +342,19 @@ private fun FlashLightButton(
 
 @Composable
 private fun LoadingIndicator(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
+    altText: String = stringResource(R.string.tk_qrScanner_loadingSpinner_alt),
 ) = Box(
-    modifier = modifier
-        .clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-        ) {},
     contentAlignment = Alignment.Center,
+    modifier = modifier
+        .periodicLiveRegion(description = altText)
 ) {
     CircularProgressIndicator(
         color = WalletTheme.colorScheme.onPrimaryFixed,
+        strokeWidth = Sizes.line02,
         modifier = Modifier
             .padding(bottom = Sizes.s02)
-            .size(Sizes.s12),
-        strokeWidth = Sizes.line02,
+            .size(Sizes.s12)
     )
 }
 

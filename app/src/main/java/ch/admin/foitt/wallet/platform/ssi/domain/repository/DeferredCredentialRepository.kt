@@ -9,6 +9,8 @@ import com.github.michaelbull.result.Result
 interface DeferredCredentialRepository {
     suspend fun getAll(): Result<List<DeferredCredentialWithAuthenticationAndKeyBinding>, DeferredCredentialRepositoryError>
 
+    suspend fun getAllIds(): Result<List<Long>, DeferredCredentialRepositoryError>
+
     suspend fun getById(credentialId: Long): Result<DeferredCredentialWithAuthenticationAndKeyBinding, DeferredCredentialRepositoryError>
 
     suspend fun updateStatus(

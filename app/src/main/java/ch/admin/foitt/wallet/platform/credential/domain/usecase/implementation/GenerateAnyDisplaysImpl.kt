@@ -13,7 +13,6 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.toGenerateCredenti
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.util.addFallbackLanguage
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedCredentialInformationDisplay
 import ch.admin.foitt.wallet.platform.oca.domain.model.GenerateOcaDisplaysError
@@ -87,14 +86,13 @@ class GenerateAnyDisplaysImpl @Inject constructor(
         } else {
             createMetadataIssuerDisplays(issuerInfo)
         }.addFallbackLanguage {
-            AnyIssuerDisplay(name = DisplayConst.ISSUER_FALLBACK_NAME, locale = DisplayLanguage.FALLBACK)
+            AnyIssuerDisplay(name = null, locale = DisplayLanguage.FALLBACK)
         }
 
     private fun createTrustedIssuerDisplays(
         trustStatement: IdentityTrustStatement,
         issuerInfo: IssuerCredentialInfo
     ): List<AnyIssuerDisplay> = trustStatement.entityName
-        .filterKeys { it.isNotBlank() }
         .map { (locale, entityName) ->
             val metadataDisplay = issuerInfo.display?.let {
                 getLocalizedCredentialInformationDisplay(

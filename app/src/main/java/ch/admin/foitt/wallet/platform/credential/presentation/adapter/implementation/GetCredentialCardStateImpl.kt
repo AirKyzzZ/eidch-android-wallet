@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
 import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetColor
 import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetContrastedColor
-import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromUri
+import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.model.DeferredCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
@@ -14,8 +14,8 @@ import javax.inject.Inject
 
 internal class GetCredentialCardStateImpl @Inject constructor(
     private val getColor: GetColor,
-    private val getDrawableFromUri: GetDrawableFromUri,
     private val getContrastedColor: GetContrastedColor,
+    private val getDrawableFromImageData: GetDrawableFromImageData
 ) : GetCredentialCardState {
 
     override suspend fun invoke(credentialDisplayData: CredentialDisplayData): CredentialCardState {
@@ -29,7 +29,7 @@ internal class GetCredentialCardStateImpl @Inject constructor(
             borderColor = backgroundColor,
             backgroundColor = backgroundColor,
             contentColor = getContrastedColor(backgroundColor),
-            logo = getDrawableFromUri(credentialDisplayData.logoUri)?.toPainter(),
+            logo = getDrawableFromImageData(credentialDisplayData.logo)?.toPainter(),
             isCredentialFromBetaIssuer = credentialDisplayData.actorEnvironment == ActorEnvironment.BETA,
             progressionState = credentialDisplayData.progressionState,
         )
@@ -46,7 +46,7 @@ internal class GetCredentialCardStateImpl @Inject constructor(
             borderColor = backgroundColor,
             backgroundColor = backgroundColor,
             contentColor = getContrastedColor(backgroundColor),
-            logo = getDrawableFromUri(credentialDisplayData.logoUri)?.toPainter(),
+            logo = getDrawableFromImageData(credentialDisplayData.logo)?.toPainter(),
             isCredentialFromBetaIssuer = false,
             deferredStatus = credentialDisplayData.status,
         )

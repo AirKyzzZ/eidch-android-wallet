@@ -1,22 +1,29 @@
 package ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.implementation
 
+import ch.admin.foitt.wallet.platform.di.IoDispatcherScope
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestQueueState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.VerifyWalletPairingError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.toVerifyWalletPairingError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.repository.EIdRequestCaseRepository
+import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.AbortSIdProcess
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.VerifyWalletPairing
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
+import com.github.michaelbull.result.onErr
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
 class VerifyWalletPairingImpl @Inject constructor(
     private val repository: EIdRequestCaseRepository,
+    private val abortSIdProcess: AbortSIdProcess,
+    @param:IoDispatcherScope private val appScope: CoroutineScope,
 ) : VerifyWalletPairing {
     override suspend fun invoke(
         caseId: String,
@@ -42,6 +49,12 @@ class VerifyWalletPairingImpl @Inject constructor(
                 "Unauthorized pairing detected for case $caseId. " +
                     "Unrecognized Remote IDs: $unrecognizedRemoteIds, Local IDs: $localPairingIds"
             )
+            // The abort is mandatory, so it runs outside the caller's scope: it must neither be cancelled
+            // when the caller goes away nor hold up the error on its way to the UI.
+            appScope.launch {
+                abortSIdProcess(caseId = caseId)
+                    .onErr { error -> Timber.e("Aborting case $caseId after an unauthorized pairing failed: $error") }
+            }
             Err(EIdRequestError.UnauthorizedPairing).bind<Unit>()
         }
 

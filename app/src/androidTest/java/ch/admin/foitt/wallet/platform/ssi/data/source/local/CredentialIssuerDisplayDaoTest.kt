@@ -42,14 +42,14 @@ class CredentialIssuerDisplayDaoTest {
 
     @Test(expected = SQLiteConstraintException::class)
     fun insertWithoutMatchingForeignKeyShouldThrow() = runTest {
-        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1.copy(credentialId = -1)))
+        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1.entity.copy(credentialId = -1)))
     }
 
     @Test
     fun getCredentialIssuerDisplaysByIdTest() = runTest {
         credentialDao.insert(credential1)
         credentialDao.insert(credential2)
-        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1, credentialIssuerDisplay2))
+        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1.entity, credentialIssuerDisplay2.entity))
 
         val issuerDisplays = credentialIssuerDisplayDao.getCredentialIssuerDisplaysById(credential2.id)
 

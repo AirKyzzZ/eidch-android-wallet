@@ -22,15 +22,17 @@ class AbortSIdProcessImpl @Inject constructor(
     private val generateProofOfPossession: GenerateProofOfPossession,
     private val environmentSetupRepository: EnvironmentSetupRepository,
 ) : AbortSIdProcess {
-    override suspend fun invoke(caseId: String): Result<Unit, AbortSIdProcessError> = coroutineBinding {
-        val clientAttestation = requestClientAttestation()
+    override suspend fun invoke(
+        caseId: String,
+    ): Result<Unit, AbortSIdProcessError> = coroutineBinding {
+        val attestation = requestClientAttestation()
             .mapError(RequestClientAttestationError::toAbortSIdProcessError).bind()
 
         val challenge = sIdRepository.fetchChallenge()
             .mapError(SIdRepositoryError::toAbortSIdProcessError).bind().challenge
 
         val pop = generateProofOfPossession(
-            clientAttestation = clientAttestation,
+            clientAttestation = attestation,
             challenge = challenge,
             audience = environmentSetupRepository.sidBackendUrl,
             requestBody = buildJsonObject {},
@@ -38,7 +40,7 @@ class AbortSIdProcessImpl @Inject constructor(
 
         sIdRepository.abortSIdProcess(
             caseId = caseId,
-            clientAttestation = clientAttestation,
+            clientAttestation = attestation,
             clientAttestationPoP = pop,
         ).mapError(SIdRepositoryError::toAbortSIdProcessError).bind()
     }

@@ -6,6 +6,7 @@ import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestation
+import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestBatchKeyAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestKeyAttestation
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockFetchCredential.proofTypeConfigHardwareBinding
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockFetchCredential.proofTypeConfigSoftwareBinding
@@ -46,6 +47,9 @@ class GenerateProofKeyPairImplTest {
     private lateinit var mockRequestKeyAttestation: RequestKeyAttestation
 
     @MockK
+    private lateinit var mockRequestBatchKeyAttestation: RequestBatchKeyAttestation
+
+    @MockK
     private lateinit var mockCreateJWSKeyPairInSoftware: CreateJWSKeyPairInSoftware
 
     @MockK
@@ -60,6 +64,7 @@ class GenerateProofKeyPairImplTest {
         val generateKeyPair = GenerateProofKeyPairsImpl(
             createJWSKeyPairInSoftware = mockCreateJWSKeyPairInSoftware,
             requestKeyAttestation = mockRequestKeyAttestation,
+            requestBatchKeyAttestation = mockRequestBatchKeyAttestation,
         )
         spyGenerateProofKeyPairs = spyk(generateKeyPair)
 
@@ -72,6 +77,11 @@ class GenerateProofKeyPairImplTest {
         coEvery {
             mockRequestKeyAttestation(ACTOR_DID, null, SigningAlgorithm.ES512, any())
         } returns Ok(KeyAttestation(validKeyPairES512, mockKeyAttestationJwt))
+        coEvery {
+            mockRequestBatchKeyAttestation(any(), ACTOR_DID, SigningAlgorithm.ES256, any())
+        } answers {
+            Ok(List(firstArg<Int>()) { KeyAttestation(validKeyPairES256Hardware, mockKeyAttestationJwt) })
+        }
         coEvery { mockCreateJWSKeyPairInSoftware(SigningAlgorithm.ES256) } returns Ok(
             validKeyPairES256Software
         )
@@ -113,6 +123,34 @@ class GenerateProofKeyPairImplTest {
                 signingAlgorithm = SigningAlgorithm.ES256,
                 keyStorageSecurityLevels = strongboxKeyStorage,
             )
+        }
+        coVerify(exactly = 0) {
+            mockRequestBatchKeyAttestation(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `A batch of hardware bound key pairs is requested in a single batch key attestation`() = runTest {
+        val amount = 5
+
+        val result = spyGenerateProofKeyPairs(amount, proofTypeConfigHardwareBinding, ACTOR_DID).assertOk()
+
+        assertEquals(amount, result.size)
+        result.forEach { bindingKeyPair ->
+            assertEquals(validKeyPairES256Hardware, bindingKeyPair.keyPair)
+            assertEquals(mockKeyAttestationJwt, bindingKeyPair.attestationJwt)
+        }
+
+        coVerify(exactly = 1) {
+            mockRequestBatchKeyAttestation(
+                amount = amount,
+                actorDid = ACTOR_DID,
+                signingAlgorithm = SigningAlgorithm.ES256,
+                keyStorageSecurityLevels = strongboxKeyStorage,
+            )
+        }
+        coVerify(exactly = 0) {
+            mockRequestKeyAttestation(any(), any(), any())
         }
     }
 

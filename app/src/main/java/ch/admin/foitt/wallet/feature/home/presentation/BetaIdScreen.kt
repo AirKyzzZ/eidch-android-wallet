@@ -43,7 +43,7 @@ private fun EIdIntroScreenContent(
                 buttons = listOf(
                     {
                         Buttons.FilledPrimary(
-                            text = stringResource(id = R.string.tk_global_getbetaid_primarybutton),
+                            text = stringResource(id = R.string.getBetaId_button),
                             onClick = onBetaIdButtonClick,
                             startIcon = painterResource(id = R.drawable.wallet_ic_external_link)
                         )
@@ -54,11 +54,11 @@ private fun EIdIntroScreenContent(
     ) {
         Spacer(modifier = Modifier.height(Sizes.s06))
         WalletTexts.TitleScreen(
-            text = stringResource(id = R.string.tk_getBetaId_create_title),
+            text = stringResource(id = R.string.getBetaId_title),
         )
         Spacer(modifier = Modifier.height(Sizes.s06))
         WalletTexts.BodyLarge(
-            text = stringResource(id = R.string.tk_getBetaId_create_body),
+            text = stringResource(id = R.string.getBetaId_body),
             modifier = Modifier.fillMaxWidth(),
         )
     }

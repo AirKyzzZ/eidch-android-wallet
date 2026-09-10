@@ -7,6 +7,7 @@ import ch.admin.foitt.wallet.BuildConfig
 import ch.admin.foitt.wallet.platform.locale.DebugLocale
 import ch.admin.foitt.wallet.platform.locale.LocaleCompat
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetSupportedAppLocales
+import ch.admin.foitt.wallet.platform.sdkVersion.isAtLeast
 import ch.admin.foitt.wallet.platform.utils.toListOfLocales
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
@@ -27,7 +28,7 @@ class GetSupportedAppLocalesImpl @Inject constructor(
     )
 
     override fun invoke(): List<Locale> {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        if (!isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
             return supportedLanguagesDefault.withDebugLocale()
         }
 

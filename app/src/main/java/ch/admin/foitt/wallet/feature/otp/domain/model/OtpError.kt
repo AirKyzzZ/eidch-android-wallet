@@ -54,6 +54,7 @@ internal fun RequestClientAttestationError.toRequestOtpError(): RequestOtpError 
 internal fun AppAttestationRepositoryError.toRequestOtpError(): RequestOtpError = when (this) {
     is AttestationError.NetworkError -> OtpError.NetworkError
     AttestationError.SocketTimeoutError -> OtpError.Unexpected(null)
+    is AttestationError.ValidationError -> OtpError.InvalidClientAttestation
     is AttestationError.Unexpected -> OtpError.Unexpected(throwable)
 }
 

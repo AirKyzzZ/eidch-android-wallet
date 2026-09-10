@@ -136,7 +136,7 @@ class LockoutViewModel @Inject constructor(
     private fun navigateToAppVersionBlocked(
         title: String?,
         text: String?,
-        playStoreUrl: String?,
+        playStoreUrl: String,
         enforcedType: EnforcementType
     ) = navManager.replaceCurrentWith(
         destination = Destination.AppVersionBlockedScreen(

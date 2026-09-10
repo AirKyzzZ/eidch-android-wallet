@@ -21,10 +21,11 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.RawAndPars
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toFetchIssuerConfigurationError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toFetchIssuerCredentialInfoError
 import ch.admin.foitt.openid4vc.domain.model.jwe.JWEError
+import ch.admin.foitt.openid4vc.domain.model.jwe.JweSizeLimits
 import ch.admin.foitt.openid4vc.domain.model.jwt.Jwt
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryption
 import ch.admin.foitt.openid4vc.domain.repository.CredentialOfferRepository
-import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWE
+import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWEWithSoftwareKey
 import ch.admin.foitt.openid4vc.utils.Constants
 import ch.admin.foitt.openid4vc.utils.ContentType.applicationJwt
 import ch.admin.foitt.openid4vc.utils.JsonError
@@ -72,7 +73,7 @@ import javax.inject.Named
 internal class CredentialOfferRepositoryImpl @Inject constructor(
     @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
     private val safeJson: SafeJson,
-    private val decryptJWE: DecryptJWE,
+    private val decryptJWEWithSoftwareKey: DecryptJWEWithSoftwareKey,
 ) : CredentialOfferRepository {
     private val latestIssuerCredentialInfo: MutableMap<String, RawAndParsedIssuerCredentialInfo> = mutableMapOf()
 
@@ -352,13 +353,15 @@ internal class CredentialOfferRepositoryImpl @Inject constructor(
     }
 
     private inline fun <reified T> decodeCredentialPayload(payload: String, keyPair: PrivateKey): T {
-        val jsonObjectString = decryptJWE(
+        val jsonObjectString = decryptJWEWithSoftwareKey(
             jweString = payload,
             privateKey = keyPair,
+            limits = JweSizeLimits.CREDENTIAL,
         ).mapError {
             when (it) {
                 is JWEError.Unexpected -> throw it.throwable
                 is JWEError.PayloadSizeExceeded -> error("Decompressed JWE payload size limit exceeded")
+                is JWEError.UnsupportedHeader -> error("Unsupported JWE header: ${it.reason}")
             }
         }.getOrThrow()
         return safeJson.safeDecodeStringTo<T>(

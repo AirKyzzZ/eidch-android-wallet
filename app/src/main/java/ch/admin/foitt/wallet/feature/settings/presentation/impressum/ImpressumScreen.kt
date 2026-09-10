@@ -115,7 +115,7 @@ private fun PublisherSection(
         contentScale = ContentScale.FillWidth,
     )
     WalletListItems.SpecialLinkSettingsItem(
-        title = stringResource(R.string.tk_settings_imprint_publisher_link_text),
+        title = stringResource(R.string.settings_legalNotice_publisher_linkText),
         onClick = onMoreInformation
     )
 }

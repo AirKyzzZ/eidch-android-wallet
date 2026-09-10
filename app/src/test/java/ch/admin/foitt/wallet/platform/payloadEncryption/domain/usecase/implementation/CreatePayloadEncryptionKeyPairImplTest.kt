@@ -69,6 +69,31 @@ class CreatePayloadEncryptionKeyPairImplTest {
         useCase(credentialResponseEncryption).assertErrorType(PayloadEncryptionError.IncompatibleDeviceProofKeyStorage::class)
     }
 
+    @Test
+    fun `An enc value the wallet cannot decrypt is skipped in favour of a supported one`() = runTest {
+        val result = useCase(
+            credentialResponseEncryption.copy(encValuesSupported = listOf("A256CBC-HS512", "A256GCM"))
+        ).assertOk()
+
+        assertEquals("A256GCM", result.enc)
+    }
+
+    @Test
+    fun `The strongest supported enc value wins over the one the issuer lists first`() = runTest {
+        val result = useCase(
+            credentialResponseEncryption.copy(encValuesSupported = listOf("A128GCM", "A256GCM"))
+        ).assertOk()
+
+        assertEquals("A256GCM", result.enc)
+    }
+
+    @Test
+    fun `An issuer supporting no enc value of the wallet returns an error`() = runTest {
+        useCase(
+            credentialResponseEncryption.copy(encValuesSupported = listOf("A256CBC-HS512"))
+        ).assertErrorType(PayloadEncryptionError.Unexpected::class)
+    }
+
     private companion object {
         const val ALGORITHM = "ECDH-ES"
         const val ENCRYPTION = "A256GCM"

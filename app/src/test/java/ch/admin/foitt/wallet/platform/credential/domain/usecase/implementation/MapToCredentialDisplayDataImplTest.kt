@@ -14,7 +14,9 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
+import ch.admin.foitt.wallet.platform.database.domain.model.ImageEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedAndThemedDisplay
@@ -85,7 +87,7 @@ class MapToCredentialDisplayDataImplTest {
         assertEquals(CredentialStatus.VALID.toDisplayStatus(), displayData.status)
         assertEquals(NAME, displayData.title)
         assertEquals(RESOLVED_DESCRIPTION, displayData.subtitle)
-        assertEquals(LOGO_URI, displayData.logoUri)
+        assertEquals(LOGO_BYTEARRAY, displayData.logo)
         assertEquals(BACKGROUND_COLOR, displayData.backgroundColor)
         assertEquals(ActorEnvironment.PRODUCTION, displayData.actorEnvironment)
         assertEquals(progressionState, displayData.progressionState)
@@ -352,7 +354,8 @@ class MapToCredentialDisplayDataImplTest {
         const val NAME = "name"
         const val DESCRIPTION = "description"
         const val RESOLVED_DESCRIPTION = "resolved description"
-        const val LOGO_URI = "logoUri"
+        val LOGO_BYTEARRAY = byteArrayOf()
+        const val LOGO_HASH = "logoHash"
         const val BACKGROUND_COLOR = "backgroundColor"
         const val CREATED_AT = 1L
         val progressionState = VerifiableProgressionState.ACCEPTED
@@ -401,13 +404,20 @@ class MapToCredentialDisplayDataImplTest {
         )
 
         fun createCredentialDisplay(template: String? = null) = CredentialDisplay(
-            id = 1,
-            credentialId = 1,
-            locale = "locale",
-            name = NAME,
-            description = template,
-            logoUri = LOGO_URI,
-            backgroundColor = BACKGROUND_COLOR,
+            CredentialDisplayEntity(
+                id = 1,
+                credentialId = 1,
+                locale = "locale",
+                name = NAME,
+                description = template,
+                logoHash = LOGO_HASH,
+                backgroundColor = BACKGROUND_COLOR,
+            ),
+            logo = ImageEntity(
+                id = 1,
+                hash = LOGO_HASH,
+                image = LOGO_BYTEARRAY,
+            ),
         )
     }
 }

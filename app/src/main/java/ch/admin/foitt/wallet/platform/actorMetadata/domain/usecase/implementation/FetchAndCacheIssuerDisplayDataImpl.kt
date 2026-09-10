@@ -70,11 +70,19 @@ internal class FetchAndCacheIssuerDisplayDataImpl @Inject constructor(
             .bind()
 
         val localizedIssuerDisplays: List<AnyIssuerDisplay> = savedIssuerDisplays.map { display ->
+            val logoImageData = display.image?.image
             AnyIssuerDisplay(
                 locale = display.locale,
                 name = display.name,
-                logo = display.image,
-                logoAltText = display.imageAltText,
+                logoImageData = logoImageData,
+                // The v31 migration leaves every hash NULL, so until the first
+                // refreshCachedImages backfill runs there is no blob to read.
+                logo = if (logoImageData == null) {
+                    issuerCredentialInfo.display?.find { it.locale == display.locale }?.logo?.uri
+                } else {
+                    null
+                },
+                logoAltText = display.entity.imageAltText,
             )
         }
 

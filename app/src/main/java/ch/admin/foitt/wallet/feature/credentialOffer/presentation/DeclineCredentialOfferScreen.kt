@@ -32,6 +32,7 @@ fun DeclineCredentialOfferScreen(
         )
     }
     DeclineCredentialOfferScreenContent(
+        nonComplianceEnabled = viewModel.nonComplianceEnabled,
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
         issuer = viewModel.uiState.collectAsStateWithLifecycle().value.issuer,
         onActorNameTap = viewModel::onActorNameTap,
@@ -44,6 +45,7 @@ fun DeclineCredentialOfferScreen(
 
 @Composable
 private fun DeclineCredentialOfferScreenContent(
+    nonComplianceEnabled: Boolean,
     isLoading: Boolean,
     issuer: ActorUiState,
     onActorNameTap: () -> Unit,
@@ -61,7 +63,7 @@ private fun DeclineCredentialOfferScreenContent(
         contentIcon = R.drawable.wallet_ic_circular_questionmark,
         primaryButtonText = stringResource(R.string.tk_receive_declineOffer_primaryButton),
         secondaryButtonText = R.string.tk_global_cancel,
-        ternaryButtonText = R.string.tk_receive_declineOffer_ternaryButton,
+        ternaryButtonText = if (nonComplianceEnabled) R.string.tk_receive_declineOffer_ternaryButton else null,
         onActorNameTap = onActorNameTap,
         onReportedActorInfo = onReportedActorInfo,
         onPrimaryButton = onDecline,
@@ -75,6 +77,7 @@ private fun DeclineCredentialOfferScreenContent(
 private fun DeclineCredentialOfferScreenContentPreview() {
     WalletTheme {
         DeclineCredentialOfferScreenContent(
+            nonComplianceEnabled = true,
             isLoading = false,
             issuer = ActorUiState(
                 name = "Test Issuer",

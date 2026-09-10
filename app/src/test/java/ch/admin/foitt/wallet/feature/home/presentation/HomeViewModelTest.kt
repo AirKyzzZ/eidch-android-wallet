@@ -11,6 +11,7 @@ import ch.admin.foitt.wallet.platform.credential.domain.repository.CredentialRef
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateAllCredentialStatuses
+import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCachedImages
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PollSIdRequestAfterFileSubmit
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.UpdateAllSIdStatuses
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
@@ -26,6 +27,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @ExtendWith(MockKExtension::class)
@@ -67,6 +70,9 @@ class HomeViewModelTest {
 
     @MockK(relaxed = true)
     private lateinit var updateAllCredentialStatuses: UpdateAllCredentialStatuses
+
+    @MockK(relaxed = true)
+    private lateinit var updateCachedImages: UpdateCachedImages
 
     @MockK(relaxed = true)
     private lateinit var updateAllSIdStatuses: UpdateAllSIdStatuses
@@ -136,6 +142,7 @@ class HomeViewModelTest {
             eIdRequestsPriorityOrdering = eIdRequestsPriorityOrdering,
             pollSIdRequestAfterFileSubmit = pollSIdRequestAfterFileSubmit,
             setTopBarState = setTopBarState,
+            updateCachedImages = updateCachedImages,
         )
     }
 
@@ -202,6 +209,40 @@ class HomeViewModelTest {
         verify(exactly = 1) { credentialRefreshRepository.markRefreshed() }
         coVerify(exactly = 1) { updateAllCredentialStatuses() }
     }
+
+    @Test
+    fun `concurrent onResume launches the cached images refresh only once`() = runTest(testDispatcher) {
+        // No advanceUntilIdle between the calls, so the second one hits the in-flight guard
+        viewModel.onResume()
+        viewModel.onResume()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { updateCachedImages() }
+    }
+
+    @Test
+    fun `onResume skips the cached images refresh within the cooldown and retries after it elapses`() =
+        runTest(testDispatcher) {
+            mockkStatic(Instant::class)
+            var now = 1_000L
+            every { Instant.now().epochSecond } returns now
+
+            viewModel.onResume()
+            advanceUntilIdle()
+            coVerify(exactly = 1) { updateCachedImages() }
+
+            now += 60L
+            every { Instant.now().epochSecond } returns now
+            viewModel.onResume()
+            advanceUntilIdle()
+            coVerify(exactly = 1) { updateCachedImages() }
+
+            now += 300L
+            every { Instant.now().epochSecond } returns now
+            viewModel.onResume()
+            advanceUntilIdle()
+            coVerify(exactly = 2) { updateCachedImages() }
+        }
 
     @Test
     fun `onRefresh ignores the cooldown and refreshes everything`() = runTest(testDispatcher) {

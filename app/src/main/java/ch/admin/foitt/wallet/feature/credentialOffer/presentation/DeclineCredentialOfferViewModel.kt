@@ -10,6 +10,7 @@ import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetActorForSc
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.adapter.GetActorUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.toBadgeBottomSheetUiState
 import ch.admin.foitt.wallet.platform.badges.presentation.model.BadgeBottomSheetUiState
+import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
@@ -44,6 +45,7 @@ class DeclineCredentialOfferViewModel @AssistedInject constructor(
     private val navManager: NavigationManager,
     private val credentialEventRepository: CredentialEventRepository,
     private val getNonComplianceReportingData: GetNonComplianceReportingData,
+    environmentSetupRepository: EnvironmentSetupRepository,
     getActorForScope: GetActorForScope,
     private val deleteCredential: DeleteCredential,
     @Assisted private val credentialId: Long,
@@ -57,6 +59,8 @@ class DeclineCredentialOfferViewModel @AssistedInject constructor(
     }
 
     private val issuerDisplayData = getActorForScope(ComponentScope.CredentialIssuer)
+
+    val nonComplianceEnabled = environmentSetupRepository.nonComplianceEnabled
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()

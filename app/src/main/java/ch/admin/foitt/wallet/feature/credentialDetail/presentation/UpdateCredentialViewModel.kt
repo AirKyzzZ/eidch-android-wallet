@@ -4,7 +4,7 @@ import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.feature.credentialDetail.domain.usecase.GetCredentialIssuerDisplaysFlow
 import ch.admin.foitt.wallet.feature.credentialDetail.presentation.model.UpdateCredentialUiState
-import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromUri
+import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshCredential
 import ch.admin.foitt.wallet.platform.credentialRefresh.domain.usecase.IsCredentialRefreshable
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCredentialStatus
@@ -33,8 +33,8 @@ import timber.log.Timber
 class UpdateCredentialViewModel @AssistedInject constructor(
     private val refreshCredential: RefreshCredential,
     private val navManager: NavigationManager,
-    private val getDrawableFromUri: GetDrawableFromUri,
     private val updateCredentialStatus: UpdateCredentialStatus,
+    private val getDrawableFromImageData: GetDrawableFromImageData,
     isCredentialRefreshable: IsCredentialRefreshable,
     getCredentialIssuerDisplaysFlow: GetCredentialIssuerDisplaysFlow,
     setTopBarState: SetTopBarState,
@@ -84,14 +84,14 @@ class UpdateCredentialViewModel @AssistedInject constructor(
             updateCredentialStatus(credentialId)
             refreshResult
                 .onOk {
-                    Timber.d("Credential update: success")
+                    Timber.d("Credential update succeeded")
                 }
-                .onErr {
-                    Timber.d("Credential update: failed")
+                .onErr { error ->
+                    Timber.d("Credential update failed: $error")
                 }
             navManager.popBackStack()
         }.trackCompletion(isLoading)
     }
 
-    private suspend fun String?.toPainter() = let { getDrawableFromUri(it)?.toPainter() }
+    private suspend fun ByteArray?.toPainter() = let { getDrawableFromImageData(it)?.toPainter() }
 }

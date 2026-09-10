@@ -40,9 +40,9 @@ class MapToCredentialDisplayDataImpl @Inject constructor(
     ): Result<CredentialDisplayData, MapToCredentialDisplayDataError> = coroutineBinding {
         val credentialDisplay = getDisplay(credentialDisplays).bind()
 
-        val resolvedDisplay = credentialDisplay.description?.let {
+        val resolvedDisplay = credentialDisplay.entity.description?.let {
             val description = resolveClaimTemplate(template = it, claims = claims)
-            credentialDisplay.copy(description = description)
+            credentialDisplay.copy(entity = credentialDisplay.entity.copy(description = description))
         } ?: credentialDisplay
 
         CredentialDisplayData(

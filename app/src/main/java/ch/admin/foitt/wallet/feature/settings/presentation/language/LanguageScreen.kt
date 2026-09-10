@@ -17,8 +17,8 @@ import ch.admin.foitt.wallet.feature.settings.presentation.composables.SettingsC
 import ch.admin.foitt.wallet.platform.composables.presentation.addTopScaffoldPadding
 import ch.admin.foitt.wallet.platform.composables.presentation.bottomSafeDrawing
 import ch.admin.foitt.wallet.platform.composables.presentation.horizontalSafeDrawing
+import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.locale.DebugLocale
-import ch.admin.foitt.wallet.platform.locale.LocaleCompat
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.theme.Sizes
 import ch.admin.foitt.wallet.theme.WalletListItems
@@ -91,7 +91,7 @@ private fun SettingsScreenPreview() {
         LanguageScreenContent(
             isSystemLanguage = false,
             selectedLanguageCode = "en",
-            supportedLocales = listOf(LocaleCompat.of("en"), LocaleCompat.of("de")),
+            supportedLocales = DisplayLanguage.PRIORITIES,
             onUpdateLanguage = {},
             onUseSystemDefaultLanguage = {},
         )

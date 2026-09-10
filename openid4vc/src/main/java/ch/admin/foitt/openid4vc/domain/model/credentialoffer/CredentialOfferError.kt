@@ -408,12 +408,18 @@ internal fun DecryptJWEError.toFetchVerifiableCredentialError(): FetchVerifiable
     is JWEError.PayloadSizeExceeded -> CredentialOfferError.Unexpected(
         IllegalStateException("Decompressed JWE payload size limit exceeded")
     )
+    is JWEError.UnsupportedHeader -> CredentialOfferError.Unexpected(
+        IllegalStateException("Unsupported JWE header: $reason")
+    )
 }
 
 internal fun DecryptJWEError.toFetchDeferredCredentialError(): FetchDeferredCredentialError = when (this) {
     is JWEError.Unexpected -> CredentialOfferError.Unexpected(throwable)
     is JWEError.PayloadSizeExceeded -> CredentialOfferError.Unexpected(
         IllegalStateException("Decompressed JWE payload size limit exceeded")
+    )
+    is JWEError.UnsupportedHeader -> CredentialOfferError.Unexpected(
+        IllegalStateException("Unsupported JWE header: $reason")
     )
 }
 

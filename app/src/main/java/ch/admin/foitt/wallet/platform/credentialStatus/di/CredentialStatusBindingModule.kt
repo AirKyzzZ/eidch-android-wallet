@@ -6,12 +6,14 @@ import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.FetchCrede
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.FetchStatusFromTokenStatusList
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.ParseTokenStatusList
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateAllCredentialStatuses
+import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCachedImages
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCredentialStatus
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.ValidateTokenStatusList
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation.FetchCredentialStatusImpl
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation.FetchStatusFromTokenStatusListImpl
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation.ParseTokenStatusListImpl
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation.UpdateAllCredentialStatusesImpl
+import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation.UpdateCachedImagesImpl
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation.UpdateCredentialStatusImpl
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation.ValidateTokenStatusListImpl
 import dagger.Binds
@@ -42,6 +44,11 @@ interface CredentialStatusBindingModule {
     fun bindUpdateAllCredentialStatuses(
         useCase: UpdateAllCredentialStatusesImpl
     ): UpdateAllCredentialStatuses
+
+    @Binds
+    fun bindUpdateCachedImages(
+        useCase: UpdateCachedImagesImpl
+    ): UpdateCachedImages
 
     @Binds
     fun bindUpdateCredentialStatus(

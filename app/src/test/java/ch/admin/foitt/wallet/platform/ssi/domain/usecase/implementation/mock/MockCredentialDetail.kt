@@ -12,6 +12,7 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimWithDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
@@ -43,18 +44,24 @@ object MockCredentialDetail {
 
     @OptIn(ExperimentalStdlibApi::class)
     val credentialDisplay1 = CredentialDisplay(
-        id = 23,
-        credentialId = CREDENTIAL_ID,
-        locale = "locale1",
-        name = "name1",
-        backgroundColor = "#" + Color.Black.toArgb().toHexString()
+        CredentialDisplayEntity(
+            id = 23,
+            credentialId = CREDENTIAL_ID,
+            locale = "locale1",
+            name = "name1",
+            backgroundColor = "#" + Color.Black.toArgb().toHexString()
+        ),
+        logo = null,
     )
 
     val credentialDisplay2 = CredentialDisplay(
-        id = 24,
-        credentialId = CREDENTIAL_ID,
-        locale = "locale2",
-        name = "name2",
+        CredentialDisplayEntity(
+            id = 24,
+            credentialId = CREDENTIAL_ID,
+            locale = "locale2",
+            name = "name2",
+        ),
+        logo = null,
     )
 
     val credentialDisplays = listOf(credentialDisplay1, credentialDisplay2)

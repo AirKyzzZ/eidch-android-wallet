@@ -52,8 +52,8 @@
     <string name="tk_error_notusable_title">Il code QR n’è betg pli valaivel</string>
     <string name="tk_error_strongboxUnavailable_body">Questa cumprova na po betg vegnir memorisada perquai che la protecziun n’è betg garantida sin quest apparat.</string>
     <string name="tk_error_strongboxUnavailable_title">Apparat betg sustegnì</string>
-    <string name="tk_getBetaId_create_body">Per il suandant link arrivas ti sin ina pagina web externa, nua che ti pos crear Beta-IDs.\n\nSuenter pos ti importar quels e testar la swiyu Wallet cun els.</string>
-    <string name="tk_getBetaId_create_title">Crear ina Beta-ID</string>
+    <string name="getBetaId_body">Per il suandant link arrivas ti sin ina pagina web externa, nua che ti pos crear Beta-IDs.\n\nSuenter pos ti importar quels e testar la swiyu Wallet cun els.</string>
+    <string name="getBetaId_title">Crear ina Beta-ID</string>
     <string name="tk_getBetaId_error_smallbody">Code d’errur: VXA - 1009</string>
     <string name="tk_getBetaId_firstUse_body">Agiunscha attestaziuns</string>
     <string name="tk_getBetaId_firstUse_title">Wallet vid</string>
@@ -100,7 +100,7 @@
     <string name="tk_global_delete">Stizzar</string>
     <string name="tk_global_externalLink_hint">La colliaziuns banduna l’app</string>
     <string name="tk_global_getEid_greenButton">Empustar la e-ID</string>
-    <string name="tk_global_getbetaid_primarybutton">Crear ina Beta-ID</string>
+    <string name="getBetaId_button">Crear ina Beta-ID</string>
     <string name="tk_global_hiddenGoToTop">Turnar ensi</string>
     <string name="tk_global_invisible_alt">Il pled-clav è zuppà. Mussar il pled-clav.</string>
     <string name="tk_global_login_primarybutton">Login</string>
@@ -138,7 +138,7 @@
     <string name="tk_login_variant_body">La swiyu Wallet è bloccada.</string>
     <string name="tk_menu_activatingBiometrics_android_body">Entrai per plaschair Voss pled-clav da Schwyu per activar il schluccament biometric.</string>
     <string name="tk_menu_deactivatingBiometrics_android_note">Entrai per plaschair Voss pled-clav da Schwyu per impedir ina bloccada biometrica.</string>
-    <string name="tk_menu_homeList_menu_add">Crear ina Beta-ID</string>
+    <string name="menu_orderBetaId_body">Crear ina Beta-ID</string>
     <string name="tk_onboarding_analytics_button_primary">Lubir</string>
     <string name="tk_onboarding_analytics_button_secondary">Refusar</string>
     <string name="tk_onboarding_analytics_primary">Contribuir en moda anonima a la meglieraziun da l’app.</string>
@@ -198,6 +198,7 @@
     <string name="tk_present_review_loading">Spetgar per plaschair</string>
     <string name="tk_qrscanner_scanning_body">Scannai il code QR per confermar Vossa identitad u per survegnir ina cumprova.</string>
     <string name="tk_qrscanner_scanning_title">Scannar il code QR</string>
+    <string name="tk_qrScanner_loadingSpinner_alt">Spetgar per plaschair</string>
     <string name="tk_receive_cameraaccessneeded1_body">La camera ha ina funcziun impurtanta. Senza la camera na pudais Vus registrar nagins permiss e documents d’identitad ni As identifitgar.</string>
     <string name="tk_receive_cameraaccessneeded1_title">Lubir l’access a la camera</string>
     <string name="tk_receive_cameraaccessneeded2_body">L’access a la camera è spirà. Per plaschair lubi l’access da nov.</string>
@@ -219,9 +220,9 @@
     <string name="tk_settings_diagnosticData_title">Cumpartir datas da diagnosa.</string>
     <string name="tk_settings_general_feedback_link_text">Communitgar il feedback</string>
     <string name="tk_settings_general_feedback_link_value">https://findmind.ch/c/feedback_public_beta_en</string>
-    <string name="tk_settings_general_imprint">Infurmaziuns legalas</string>
-    <string name="tk_settings_general_licences">Licenzas</string>
-    <string name="tk_settings_general_sectionTitle">General</string>
+    <string name="settings_legal_legalNotice_body">Infurmaziuns legalas</string>
+    <string name="settings_legal_licences_body">Licenzas</string>
+    <string name="settings_legal_sectionTitle">General</string>
     <string name="tk_settings_imprint_appInformation_appVersion">Versiun da l’app</string>
     <string name="tk_settings_imprint_appInformation_body">L’app swiyu è open source. Il code da funtauna po vegnir consultà sin GitHub.</string>
     <string name="tk_settings_imprint_appInformation_github_link_value">https://github.com/swiyu-admin-ch</string>
@@ -229,8 +230,6 @@
     <string name="tk_settings_imprint_legal_sectionTitle">Indicaziuns giuridicas</string>
     <string name="tk_settings_imprint_legal_termsOfUse_link_text">Cundiziuns d’utilisaziun</string>
     <string name="tk_settings_imprint_legal_termsOfUse_link_value">https://www.eid.admin.ch/de/swiyu-terms</string>
-    <string name="tk_settings_imprint_publisher_link_text">www.bj.admin.ch</string>
-    <string name="tk_settings_imprint_publisher_link_value">https://www.bj.admin.ch/de</string>
     <string name="tk_settings_imprint_publisher_sectionTitle">Emettur, realisaziun ed exploitaziun</string>
     <string name="tk_settings_imprint_title">Infurmaziuns legalas</string>
     <string name="tk_settings_licences_body">Qua chatta ti la survista dals licenzas da software utilisadas en la Swiyu Wallet. Las licenzas correspundan a las directivas da protecziun da datas da l’UFIT e als pli novs standards da segirezza. Cun questa glista vulain nus crear transparenza per tut las persunas che utiliseschan l’app.</string>
@@ -241,18 +240,17 @@
     <string name="tk_settings_securityPrivacy_dataProtection_privacyPolicy_link_value">https://www.eid.admin.ch/de/swiyu-privacy</string>
     <string name="tk_settings_securityPrivacy_dataProtection_shareData_primary">Cundivider datas diagnostic</string>
     <string name="tk_settings_securityPrivacy_dataProtection_shareData_secondary">Per crear ina e-ID dovrain nus Vossa consentiment per la decleraziun da protecziun da datas.</string>
-    <string name="tk_settings_wallet_language">Lingua</string>
-    <string name="tk_settings_wallet_sectionTitle">Wallet</string>
-    <string name="tk_settings_wallet_securityPrivacy">Segirezza e protecziun da datas</string>
+    <string name="settings_general_language_body">Lingua</string>
+    <string name="settings_general_sectionTitle">Wallet</string>
+    <string name="settings_general_securityPrivacy_body">Segirezza &amp; protecziun da datas</string>
     <string name="tk_versionEnforcement_button">Actualisar l\'app</string>
-    <string name="version_enforcement_store_link">https://play.google.com/store/apps/details?id=ch.admin.foitt.swiyu</string>
-    <string name="tk_settings_general_help_link_value">https://www.eid.admin.ch/de/hilfe</string>
+    <string name="settings_help_contact_linkValue">https://www.eid.admin.ch/de/hilfe</string>
     <string name="tk_issuer_legitimate">Emissiun autorisada</string>
     <string name="tk_issuer_notLegitimate">Emissiun betg autorisada</string>
     <string name="tk_verifier_legitimate">Posta da verificaziun autorisada</string>
     <string name="tk_verifier_notLegitimate">Posta da verificaziun betg autorisada</string>
-    <string name="tk_settings_title">Configuraziuns</string>
-    <string name="tk_settings_general_help_link_text">Agid e contact</string>
+    <string name="settings_screenTitle">Configuraziuns</string>
+    <string name="settings_help_contact_linkText">Agid e contact</string>
     <string name="biometricsPrompt_dismissButton">Saltar</string>
     <string name="biometricsPrompt_title">Debloc biometric</string>
     <string name="biometrics_lockout_text">L’utilisaziun da las datas biometricas è bloccada temporarmain. Pudais empruvar da las activar pli tard.</string>
@@ -386,9 +384,9 @@
     <string name="tk_home_scan_button">Scannar</string>
     <string name="tk_home_scan_button_altText">Scannai il code QR per s’identifitgar u agiuntar ina cumprova.</string>
     <string name="tk_issuer_notInSystem">Nunenconuschent</string>
-    <string name="tk_menu_homeList_help">Agid</string>
-    <string name="tk_menu_homeList_orderEid">Ordinaziun d’e-ID</string>
-    <string name="tk_menu_homeList_settings">Configuraziuns</string>
+    <string name="menu_help_body">Agid &amp; Contact</string>
+    <string name="menu_orderEid_body">Ordinaziun d’e-ID</string>
+    <string name="menu_settings_body">Configuraziuns</string>
     <string name="tk_menu_language_android_selected_language">Lingua selecziunada</string>
     <string name="tk_present_review_confirmPresentation_button_primary">Cundivider datas</string>
     <string name="tk_present_review_confirmPresentation_button_secondary">Refusar da cundivider datas</string>
@@ -780,7 +778,7 @@
     <string name="tk_eidRequest_walletPairing_currentDevice_sectionTitle_sync">Apparat 1</string>
     <string name="tk_eidRequest_otp_settings_toggle">Bypass OTP</string>
     <string name="verification_bluetooth_permission_title">swiyu Check vul duvrar Bluetooth</string>
-    <string name="tk_settings_general_accessibility">Accessibilitad senza barrieras</string>
+    <string name="settings_legal_accessibility_body">Accessibilitad senza barrieras</string>
     <string name="tk_settings_accessibility_declaration_link_value">https://www.eid.admin.ch/de/barrierefreiheit-in-der-bundesverwaltung</string>
     <string name="tk_settings_accessibility_declaration_link_text">Decleraziun da l\'accessibilitad senza barrieras</string>
     <string name="tk_deferredCredentialDetails_invalid_contentTitle">Pertge è la cumprova nunvalaivla?</string>
@@ -848,4 +846,6 @@
     <string name="tk_credentialDetail_batchIssuanceInfo_title">Emissiun da stapel</string>
     <string name="tk_credentialDetail_batchIssuanceInfo_body">Quest cumprova è vegnì emess sco “stapel”.\n\nTar mintga preschentaziun vegn utilisà adina in singul nov cumprova ord il stapel.\n\nLa separaziun tecnica da las singulas utilisaziuns porscha protecziun supplementara da la sfera privata.</string>
     <string name="tk_credentialDetail_batchIssuanceInfo_usageDetails_title">Detagls d’utilisaziun</string>
+    <string name="settings_legalNotice_publisher_linkText">www.bj.admin.ch</string>
+    <string name="settings_legalNotice_publisher_linkValue">https://www.bj.admin.ch/de</string>
 </resources>

@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import ch.admin.foitt.wallet.R
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetCurrentAppLocale
+import ch.admin.foitt.wallet.platform.sdkVersion.isAtLeast
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -42,7 +43,7 @@ class WalletFirebaseMessagingService : FirebaseMessagingService() {
             .build()
 
         var permissionGranted = true
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
             permissionGranted = ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.POST_NOTIFICATIONS

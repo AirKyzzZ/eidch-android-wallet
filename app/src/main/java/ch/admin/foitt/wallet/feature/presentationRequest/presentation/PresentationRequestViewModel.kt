@@ -310,16 +310,18 @@ class PresentationRequestViewModel @AssistedInject constructor(
                 state = presentationRequestWithRaw.authorizationRequest.state,
             ).onOk { authorizationResponseResponse ->
                 navManager.replaceCurrentWith(
-                    destination = Destination.PresentationDeclinedScreen(authorizationResponseResponse.redirectUri)
-                )
-            }.onOk { authorizationResponseResponse ->
-                navManager.replaceCurrentWith(
-                    destination = Destination.PresentationDeclinedScreen(authorizationResponseResponse.redirectUri)
+                    destination = Destination.PresentationDeclinedScreen(
+                        redirectUri = authorizationResponseResponse.redirectUri,
+                        credentialId = compatibleCredential.credentialId
+                    )
                 )
             }.onErr { error ->
                 Timber.w("Decline presentation error: $error")
                 navManager.replaceCurrentWith(
-                    destination = Destination.PresentationDeclinedScreen(null)
+                    destination = Destination.PresentationDeclinedScreen(
+                        redirectUri = null,
+                        credentialId = compatibleCredential.credentialId
+                    )
                 )
             }
         }

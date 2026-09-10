@@ -33,6 +33,15 @@ class DeferredCredentialRepositoryImpl @Inject constructor(
         SsiError.Unexpected(throwable)
     }
 
+    override suspend fun getAllIds(): Result<List<Long>, DeferredCredentialRepositoryError> = runSuspendCatching {
+        withContext(ioDispatcher) {
+            dao().getAllIds()
+        }
+    }.mapError { throwable ->
+        Timber.e(t = throwable, message = "Failed to get all deferred credential ids")
+        SsiError.Unexpected(throwable)
+    }
+
     override suspend fun updateStatus(
         credentialId: Long,
         progressionState: DeferredProgressionState,

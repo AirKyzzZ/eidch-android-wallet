@@ -403,7 +403,7 @@ private fun HomeTopBar(
 ) = Box(
     modifier = modifier,
 ) {
-    TopBarTitleOnly(R.string.tk_settings_wallet_sectionTitle) {
+    TopBarTitleOnly(R.string.settings_general_sectionTitle) {
         TopBarRoundButton(
             onClick = { onMenu(true) },
             icon = R.drawable.wallet_ic_menu,

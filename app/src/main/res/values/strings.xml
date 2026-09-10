@@ -257,8 +257,8 @@
     <string name="tk_error_strongboxUnavailable_title">Device not supported</string>
     <string name="tk_error_verifier_notregistered_body">This verifier is not registered.</string>
     <string name="tk_error_verifier_notregistered_title">Unknown verifier</string>
-    <string name="tk_getBetaId_create_body">Via the following link, you will be redirected to an external website where you can create Beta-IDs.\n\nAfterwards, you can import them and test the swiyu app with them.</string>
-    <string name="tk_getBetaId_create_title">Create Beta-ID</string>
+    <string name="getBetaId_body">Via the following link, you will be redirected to an external website where you can create Beta-IDs.\n\nAfterwards, you can import them and test the swiyu app with them.</string>
+    <string name="getBetaId_title">Create Beta-ID</string>
     <string name="tk_getBetaId_error_smallbody">Error code: VXA - 1009</string>
     <string name="tk_getBetaId_firstUse_body">Add a Beta-ID to test the swiyu app.</string>
     <string name="tk_getBetaId_firstUse_title">Wallet empty</string>
@@ -381,7 +381,7 @@
     <string name="tk_global_retry">Try again</string>
     <string name="tk_global_externalLink_hint">Link leaves the app</string>
     <string name="tk_global_getEid_greenButton">Create e-ID</string>
-    <string name="tk_global_getbetaid_primarybutton">Create Beta-ID</string>
+    <string name="getBetaId_button">Create Beta-ID</string>
     <string name="tk_global_hiddenGoToTop">Back to top</string>
     <string name="tk_global_invisible_alt">Password is hidden. Show password.</string>
     <string name="tk_global_login_primarybutton">Login</string>
@@ -432,10 +432,10 @@
     <string name="tk_login_variant_body">The swiyu app is locked</string>
     <string name="tk_menu_activatingBiometrics_android_body">Please enter your swiyu password to activate biometric unlocking.</string>
     <string name="tk_menu_deactivatingBiometrics_android_note">Please enter your swiyu password to disable biometric unlocking.</string>
-    <string name="tk_menu_homeList_help">Help</string>
-    <string name="tk_menu_homeList_menu_add">Create Beta-ID</string>
-    <string name="tk_menu_homeList_orderEid">Order e-ID</string>
-    <string name="tk_menu_homeList_settings">Settings</string>
+    <string name="menu_help_body">Help &amp; Contact</string>
+    <string name="menu_orderBetaId_body">Create Beta-ID</string>
+    <string name="menu_orderEid_body">Order e-ID</string>
+    <string name="menu_settings_body">Settings</string>
     <string name="tk_menu_language_android_selected_language">Selected language</string>
     <string name="tk_nonCompliance_list_excessiveData_body">During a data request, more information about me was requested than necessary.</string>
     <string name="tk_nonCompliance_list_excessiveData_title">Excessive data request</string>
@@ -552,6 +552,7 @@
     <string name="tk_pushNotificationPermission_setup_error_secondary">We were not able to activate push notifications. You can try again or skip this step.</string>
     <string name="tk_qrscanner_scanning_body">Scan the QR code to confirm your identity or receive a document or credential.</string>
     <string name="tk_qrscanner_scanning_title">Scan QR code</string>
+    <string name="tk_qrScanner_loadingSpinner_alt">Please wait</string>
     <string name="tk_receive_cameraaccessneeded1_body">The camera is an important function. Without a camera, you cannot receive IDs and documents or identify yourself.</string>
     <string name="tk_receive_cameraaccessneeded1_title">Allow access to camera</string>
     <string name="tk_receive_cameraaccessneeded2_body">Camera access has expired. Please allow access again.</string>
@@ -594,12 +595,12 @@
     <string name="tk_settings_diagnosticData_title">Diagnostic data</string>
     <string name="tk_settings_general_feedback_link_text">Give feedback</string>
     <string name="tk_settings_general_feedback_link_value">https://findmind.ch/c/feedback_public_beta_en</string>
-    <string name="tk_settings_general_help_link_text">Help &amp; Contact</string>
-    <string name="tk_settings_general_help_link_value">https://www.eid.admin.ch/en/hilfe-e</string>
-    <string name="tk_settings_general_accessibility">Accessibility</string>
-    <string name="tk_settings_general_imprint">Legal notice</string>
-    <string name="tk_settings_general_licences">Licences</string>
-    <string name="tk_settings_general_sectionTitle">General</string>
+    <string name="settings_help_contact_linkText">Help &amp; Contact</string>
+    <string name="settings_help_contact_linkValue">https://www.eid.admin.ch/en/hilfe-e</string>
+    <string name="settings_legal_accessibility_body">Accessibility</string>
+    <string name="settings_legal_legalNotice_body">Legal notice</string>
+    <string name="settings_legal_licences_body">Licences</string>
+    <string name="settings_legal_sectionTitle">General</string>
     <string name="tk_settings_imprint_appInformation_appVersion">App Version</string>
     <string name="tk_settings_imprint_appInformation_body">The swiyu app is open source. Its source code can be viewed on GitHub.</string>
     <string name="tk_settings_imprint_appInformation_buildNumber">Build Number</string>
@@ -611,8 +612,6 @@
     <string name="tk_settings_imprint_legal_sectionTitle">Legal aspects</string>
     <string name="tk_settings_imprint_legal_termsOfUse_link_text">Terms of use</string>
     <string name="tk_settings_imprint_legal_termsOfUse_link_value">https://www.eid.admin.ch/en/swiyu-terms-e</string>
-    <string name="tk_settings_imprint_publisher_link_text">www.bj.admin.ch</string>
-    <string name="tk_settings_imprint_publisher_link_value">https://www.bj.admin.ch/en</string>
     <string name="tk_settings_imprint_publisher_name">Federal Department of Justice and Police FDJP\nFederal Office of Justice FOJ</string>
     <string name="tk_settings_imprint_publisher_sectionTitle">Issuer, implementation and operation</string>
     <string name="tk_settings_imprint_title">Legal notice</string>
@@ -633,10 +632,10 @@
     <string name="tk_settings_securityPrivacy_security_sectionTitle">Security</string>
     <string name="tk_settings_securityPrivacy_security_unlock">Unlock with biometrics</string>
     <string name="tk_settings_securityPrivacy_title">Security and data protection</string>
-    <string name="tk_settings_title">Settings</string>
-    <string name="tk_settings_wallet_language">Language</string>
-    <string name="tk_settings_wallet_sectionTitle">Wallet</string>
-    <string name="tk_settings_wallet_securityPrivacy">Security and data protection</string>
+    <string name="settings_screenTitle">Settings</string>
+    <string name="settings_general_language_body">Language</string>
+    <string name="settings_general_sectionTitle">Wallet</string>
+    <string name="settings_general_securityPrivacy_body">Security &amp; data protection</string>
     <string name="tk_unsecuredDevice_button_settings">Go to settings</string>
     <string name="tk_unsecuredDevice_primary">Security Notice</string>
     <string name="tk_unsecuredDevice_secondary">To use this app, your device must be secured. Please enable a screen lock (e.g., PIN, passphrase, or pattern) in your phone settings.</string>
@@ -675,7 +674,6 @@
     <string name="tk_eidRequest_walletPairing_timeout_button_primary">Re-start verification</string>
     <string name="tk_verifier_legitimate">Authorised verifier</string>
     <string name="tk_verifier_notLegitimate">Not authorised verifier</string>
-    <string name="version_enforcement_store_link">https://play.google.com/store/apps/details?id=ch.admin.foitt.swiyu</string>
     <string name="tk_badgeInformation_sensitiveClaimInfo_primary">Sensitive data requested</string>
     <string name="tk_badgeInformation_sensitiveClaimInfo_secondary">Sensitive data has been requested from you. Decline the transaction if you do not wish to share this information.</string>
     <string name="tk_badgeInformation_nonSensitiveClaimInfo_primary">Data requested</string>
@@ -953,5 +951,7 @@
     <string name="tk_present_review_unregisteredRequestWarning_primary">Unregistered Request</string>
     <string name="tk_present_review_unregisteredRequestWarning_secondary">This request is not registered in the Confederation\'s system. Accepting may pose a risk to your data.</string>
     <string name="tk_eidRequest_walletPairing_invalidPairingCount_error_secondary">You cannot start the online auto verification due to errors on your list of paired devices.</string>
-    <string name="tk_settings_feedbackSupport_sectionTitle">Feedback &amp; Support</string>
+    <string name="settings_help_sectionTitle">Feedback &amp; Support</string>
+    <string name="settings_legalNotice_publisher_linkText">www.bj.admin.ch</string>
+    <string name="settings_legalNotice_publisher_linkValue">https://www.bj.admin.ch/en</string>
 </resources>

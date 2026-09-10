@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation
 
 import android.content.Context
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithDisplays
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedAndThemedDisplay
@@ -103,19 +104,22 @@ class GetDeferredCredentialWithDetailFlowImplTest {
         const val CREDENTIAL_ID = 1L
         const val ENDPOINT = "endpoint"
         const val NAME = "name"
-        const val LOGO_URI = "logoUri"
+        const val LOGO_HASH = "logoHash"
         const val BACKGROUND_COLOR = "backgroundColor"
         const val LOCALE = "locale"
 
         val credentialDisplay = createCredentialDisplay()
 
         private fun createCredentialDisplay() = CredentialDisplay(
-            id = 1,
-            credentialId = CREDENTIAL_ID,
-            locale = LOCALE,
-            name = NAME,
-            logoUri = LOGO_URI,
-            backgroundColor = BACKGROUND_COLOR,
+            CredentialDisplayEntity(
+                id = 1,
+                credentialId = CREDENTIAL_ID,
+                locale = LOCALE,
+                name = NAME,
+                logoHash = LOGO_HASH,
+                backgroundColor = BACKGROUND_COLOR,
+            ),
+            logo = null
         )
 
         private val deferredCredential = DeferredCredentialEntity(

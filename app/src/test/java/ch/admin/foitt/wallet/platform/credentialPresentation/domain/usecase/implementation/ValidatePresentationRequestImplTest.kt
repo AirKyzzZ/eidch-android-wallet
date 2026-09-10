@@ -228,6 +228,15 @@ class ValidatePresentationRequestImplTest {
     }
 
     @Test
+    fun `DCQL Authorization request not specifying holder binding and not containing state returns presentation request`(): Unit = runTest {
+        every {
+            mockPresentationJwt.payloadJson
+        } returns MockPresentationRequest.authorizationRequestWithoutStateAndWithoutHolderBinding.toJsonObject()
+
+        useCase(VerificationProcessType.NETWORK, mockRequestObject).assertOk()
+    }
+
+    @Test
     fun `Verifier with BETA actor environment returns presentation request`() = runTest {
         coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.BETA
 

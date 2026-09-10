@@ -417,6 +417,7 @@ sealed interface Destination : NavKey {
     @Serializable
     data class PresentationDeclinedScreen(
         val redirectUri: String?,
+        val credentialId: Long,
     ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
 
     @Serializable
@@ -508,7 +509,7 @@ sealed interface Destination : NavKey {
     data class AppVersionBlockedScreen(
         val title: String?,
         val text: String?,
-        val playStoreUrl: String?,
+        val playStoreUrl: String,
         val enforcedType: EnforcementType
     ) : Destination, NoAutoLogout
 

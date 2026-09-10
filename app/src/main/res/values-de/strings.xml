@@ -75,8 +75,8 @@
     <string name="tk_error_notusable_title">QR-Code nicht mehr gültig</string>
     <string name="tk_error_strongboxUnavailable_body">Dieser Nachweis kann nicht gespeichert werden, da auf diesem Gerät der Schutz nicht sichergestellt ist.</string>
     <string name="tk_error_strongboxUnavailable_title">Gerät wird nicht unterstützt</string>
-    <string name="tk_getBetaId_create_body">Über den folgenden Link kommen Sie zu einer externen Webseite, auf der Sie Beta-IDs erstellen können.\n\nDanach können Sie diese importieren und die swiyu App damit testen.</string>
-    <string name="tk_getBetaId_create_title">Beta-ID erstellen</string>
+    <string name="getBetaId_body">Über den folgenden Link kommen Sie zu einer externen Webseite, auf der Sie Beta-IDs erstellen können.\n\nDanach können Sie diese importieren und die swiyu App damit testen.</string>
+    <string name="getBetaId_title">Beta-ID erstellen</string>
     <string name="tk_getBetaId_error_smallbody">Fehlercode: VXA - 1009</string>
     <string name="tk_getBetaId_firstUse_body">Fügen Sie eine Beta-ID hinzu, um die swiyu App zu testen.</string>
     <string name="tk_getBetaId_firstUse_title">Leere Wallet</string>
@@ -129,7 +129,7 @@
     <string name="tk_global_delete">Löschen</string>
     <string name="tk_global_externalLink_hint">Link verlässt die App</string>
     <string name="tk_global_getEid_greenButton">e-ID bestellen</string>
-    <string name="tk_global_getbetaid_primarybutton">Beta-ID erstellen</string>
+    <string name="getBetaId_button">Beta-ID erstellen</string>
     <string name="tk_global_hiddenGoToTop">Zurück nach oben</string>
     <string name="tk_global_invisible_alt">Passwort ist ausgeblendet. Passwort anzeigen.</string>
     <string name="tk_global_login_primarybutton">Login</string>
@@ -171,7 +171,7 @@
     <string name="tk_login_variant_body">Die swiyu App ist gesperrt</string>
     <string name="tk_menu_activatingBiometrics_android_body">Bitte geben Sie Ihr swiyu-Passwort ein, um die biometrische Entsperrung zu aktivieren.</string>
     <string name="tk_menu_deactivatingBiometrics_android_note">Bitte geben Sie Ihr swiyu-Passwort ein, um die biometrische Entsperrung zu deaktivieren.</string>
-    <string name="tk_menu_homeList_menu_add">Beta-ID hinzufügen</string>
+    <string name="menu_orderBetaId_body">Beta ID erstellen</string>
     <string name="tk_onboarding_analytics_button_primary">Erlauben</string>
     <string name="tk_onboarding_analytics_button_secondary">Ablehnen</string>
     <string name="tk_onboarding_analytics_primary">Anonym zur Verbesserung der App beitragen</string>
@@ -231,6 +231,7 @@
     <string name="tk_present_review_loading">Bitte warten</string>
     <string name="tk_qrscanner_scanning_body">Scannen Sie den QR-Code, um Ihre Identität zu bestätigen oder einen Nachweis zu erhalten.</string>
     <string name="tk_qrscanner_scanning_title">QR-Code scannen</string>
+    <string name="tk_qrScanner_loadingSpinner_alt">Bitte warten</string>
     <string name="tk_receive_cameraaccessneeded1_body">Die Kamera ist eine wichtige Funktion. Ohne Kamera können Sie keine Ausweise und Dokumente empfangen oder sich damit ausweisen.</string>
     <string name="tk_receive_cameraaccessneeded1_title">Zugriff auf Kamera erlauben</string>
     <string name="tk_receive_cameraaccessneeded2_body">Der Kamerazugriff ist abgelaufen. Bitte erlauben Sie den Zugriff erneut.</string>
@@ -253,11 +254,11 @@
     <string name="tk_settings_diagnosticData_title">Diagnosedaten</string>
     <string name="tk_settings_general_feedback_link_text">Feedback mitteilen</string>
     <string name="tk_settings_general_feedback_link_value">https://findmind.ch/c/feedback_public_beta_de</string>
-    <string name="tk_settings_general_help_link_text">Hilfe &amp; Kontakt</string>
-    <string name="tk_settings_general_help_link_value">https://www.eid.admin.ch/de/hilfe</string>
-    <string name="tk_settings_general_imprint">Impressum</string>
-    <string name="tk_settings_general_licences">Lizenzen</string>
-    <string name="tk_settings_general_sectionTitle">Allgemein</string>
+    <string name="settings_help_contact_linkText">Hilfe &amp; Kontakt</string>
+    <string name="settings_help_contact_linkValue">https://www.eid.admin.ch/de/hilfe</string>
+    <string name="settings_legal_legalNotice_body">Impressum</string>
+    <string name="settings_legal_licences_body">Lizenzen</string>
+    <string name="settings_legal_sectionTitle">Allgemein</string>
     <string name="tk_settings_imprint_appInformation_appVersion">App Version</string>
     <string name="tk_settings_imprint_appInformation_body">swiyu ist Open Source. Den Quellcode finden Sie auf GitHub.</string>
     <string name="tk_settings_imprint_appInformation_buildNumber">Build Nummer</string>
@@ -268,8 +269,6 @@
     <string name="tk_settings_imprint_legal_sectionTitle">Rechtliche Hinweise</string>
     <string name="tk_settings_imprint_legal_termsOfUse_link_text">Nutzungsbedingungen</string>
     <string name="tk_settings_imprint_legal_termsOfUse_link_value">https://www.eid.admin.ch/de/swiyu-terms</string>
-    <string name="tk_settings_imprint_publisher_link_text">www.bj.admin.ch</string>
-    <string name="tk_settings_imprint_publisher_link_value">https://www.bj.admin.ch/de</string>
     <string name="tk_settings_imprint_publisher_name">Eidgenössisches Justiz- und Polizeidepartement EJPD\nBundesamt für Justiz BJ</string>
     <string name="tk_settings_imprint_publisher_sectionTitle">Herausgabe, Entwicklung und Betrieb</string>
     <string name="tk_settings_imprint_title">Impressum</string>
@@ -289,12 +288,11 @@
     <string name="tk_settings_securityPrivacy_security_sectionTitle">Sicherheit</string>
     <string name="tk_settings_securityPrivacy_security_unlock">Mit Biometrie entsperren</string>
     <string name="tk_settings_securityPrivacy_title">Sicherheit &amp; Datenschutz</string>
-    <string name="tk_settings_title">Einstellungen</string>
-    <string name="tk_settings_wallet_language">Sprache</string>
-    <string name="tk_settings_wallet_sectionTitle">Wallet</string>
-    <string name="tk_settings_wallet_securityPrivacy">Sicherheit &amp; Datenschutz</string>
+    <string name="settings_screenTitle">Einstellungen</string>
+    <string name="settings_general_language_body">Sprache</string>
+    <string name="settings_general_sectionTitle">Wallet</string>
+    <string name="settings_general_securityPrivacy_body">Sicherheit &amp; Datenschutz</string>
     <string name="tk_versionEnforcement_button">App aktualisieren</string>
-    <string name="version_enforcement_store_link">https://play.google.com/store/apps/details?id=ch.admin.foitt.swiyu</string>
     <string name="tk_eidRequest_attestation_clientNotSupported_button_close">Schliessen</string>
     <string name="tk_eidRequest_attestation_clientNotSupported_button_playstore_text">Laden Sie die swiyu App herunter</string>
     <string name="tk_eidRequest_attestation_clientNotSupported_button_playstore_url">https://play.google.com/store/apps/details?id=ch.admin.foitt.swiyu</string>
@@ -355,9 +353,9 @@
     <string name="tk_getEid_startSelfieVideo_secondary">Ein kurzes Video Ihres Gesichts hilft, die Identität zu bestätigen. Achten Sie darauf, dass Ihr Gesicht gut beleuchtet und klar sichtbar ist. Wenn Sie bereit sind, tippen Sie auf «Weiter», um fortzufahren.</string>
     <string name="tk_issuer_legitimate">Berechtigte Ausstellung</string>
     <string name="tk_issuer_notLegitimate">Keine berechtigte Ausstellung</string>
-    <string name="tk_menu_homeList_help">Hilfe</string>
-    <string name="tk_menu_homeList_orderEid">e-ID bestellen</string>
-    <string name="tk_menu_homeList_settings">Einstellungen</string>
+    <string name="menu_help_body">Hilfe &amp; Kontakt</string>
+    <string name="menu_orderEid_body">e-ID bestellen</string>
+    <string name="menu_settings_body">Einstellungen</string>
     <string name="tk_menu_language_android_selected_language">Ausgewählte Sprache</string>
     <string name="tk_present_verifierError_subtitle">Die Verifikation ist fehlgeschlagen. Bitte versuchen Sie es später erneut oder wenden Sie sich an den Support.</string>
     <string name="tk_present_verifierError_title">Ihre Daten konnten nicht verarbeitet werden.</string>
@@ -778,7 +776,7 @@
     <string name="tk_eidRequest_walletPairing_currentDevice_sectionTitle_sync">Gerät 1</string>
     <string name="tk_eidRequest_otp_settings_toggle">Bypass OTP</string>
     <string name="verification_bluetooth_permission_title">swiyu Check möchte Bluetooth verwenden</string>
-    <string name="tk_settings_general_accessibility">Barrierefreiheit</string>
+    <string name="settings_legal_accessibility_body">Barrierefreiheit</string>
     <string name="tk_settings_accessibility_declaration_link_value">https://www.eid.admin.ch/de/barrierefreiheit-in-der-bundesverwaltung</string>
     <string name="tk_settings_accessibility_declaration_link_text">Erklärung zur Barrierefreiheit</string>
     <string name="tk_deferredCredentialDetails_invalid_contentTitle">Warum ist der Nachweis ungültig?</string>
@@ -847,4 +845,6 @@
     <string name="tk_credentialDetail_batchIssuanceInfo_title">Stapel-Ausstellung</string>
     <string name="tk_credentialDetail_batchIssuanceInfo_body">Dieser Nachweis wurde als Stapel ausgestellt.\n\nBei jeder Präsentation wird jeweils ein einzelner neuer Nachweis aus dem Stapel verwendet.\n\nDie technische Trennung der einzelnen Verwendungen bietet zusätzlichen Datenschutz.</string>
     <string name="tk_credentialDetail_batchIssuanceInfo_usageDetails_title">Nutzungsdetails</string>
+    <string name="settings_legalNotice_publisher_linkText">www.bj.admin.ch</string>
+    <string name="settings_legalNotice_publisher_linkValue">https://www.bj.admin.ch/de</string>
 </resources>

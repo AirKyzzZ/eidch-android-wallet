@@ -12,6 +12,7 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestClien
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialActivityEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetCurrentAppLocale
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceChallengeResponse
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceError
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceMetadata
@@ -36,6 +37,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -52,6 +54,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import java.time.Instant
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(UnsafeResultValueAccess::class)
 class SendNonComplianceReportImplTest {
@@ -95,6 +98,9 @@ class SendNonComplianceReportImplTest {
     @MockK
     private lateinit var mockClientIdentifier: ClientIdentifier
 
+    @MockK
+    private lateinit var mockGetCurrentAppLocale: GetCurrentAppLocale
+
     private lateinit var useCase: SendNonComplianceReport
 
     @BeforeEach
@@ -109,6 +115,7 @@ class SendNonComplianceReportImplTest {
                 generateProofOfPossession = mockGenerateProofOfPossession,
                 environmentSetupRepository = mockEnvironmentSetupRepository,
                 safeJson = safeJson,
+                getCurrentAppLocale = mockGetCurrentAppLocale,
             ),
             recordPrivateCalls = true
         )
@@ -310,6 +317,8 @@ class SendNonComplianceReportImplTest {
     }
 
     private fun setupDefaultMocks() {
+        every { mockGetCurrentAppLocale() } returns Locale.ENGLISH
+
         every { mockCredentialActivity.credentialId } returns CREDENTIAL_ID
         every { mockCredentialActivity.createdAt } returns ACTIVITY_CREATED_AT
         every { mockCredentialActivity.nonComplianceData } returns PRESENTATION_REQUEST_JWT
@@ -318,7 +327,7 @@ class SendNonComplianceReportImplTest {
 
         every { mockAuthorizationRequest.clientIdentifier } returns mockClientIdentifier
         every { mockAuthorizationRequest.responseUri } returns VERIFIER_URL
-        every { mockAuthorizationRequest.dcqlQuery } returns io.mockk.mockk()
+        every { mockAuthorizationRequest.dcqlQuery } returns mockk()
 
         every { mockVerifiableCredential.issuer } returns ISSUER_DID
 
@@ -354,12 +363,16 @@ class SendNonComplianceReportImplTest {
         } returns Ok(Unit)
     }
 
-    private fun createNonComplianceRequest(nonComplianceData: String = PRESENTATION_REQUEST_JWT): Pair<NonComplianceRequest, JsonElement> {
+    private fun createNonComplianceRequest(
+        nonComplianceData: String = PRESENTATION_REQUEST_JWT,
+        language: String = "en"
+    ): Pair<NonComplianceRequest, JsonElement> {
         val metadata = buildMetadata(nonComplianceData)
         val nonComplianceRequest = NonComplianceRequest(
             type = reason.type,
             description = DESCRIPTION,
             email = EMAIL,
+            language = language,
             metadata = metadata
         )
         val requestBody = safeJson.safeEncodeObjectToJsonElement(nonComplianceRequest).value

@@ -149,7 +149,7 @@ class PassphraseLoginViewModel @AssistedInject constructor(
         }
     }
 
-    private fun navigateToAppVersionBlocked(title: String?, text: String?, playStoreLink: String?, enforcedType: EnforcementType) {
+    private fun navigateToAppVersionBlocked(title: String?, text: String?, playStoreLink: String, enforcedType: EnforcementType) {
         Timber.d("AppVersionBlocked: $title, $text")
         navigationManager.popUpToAndNavigate(
             popToInclusive = Destination.PassphraseLoginScreen::class,

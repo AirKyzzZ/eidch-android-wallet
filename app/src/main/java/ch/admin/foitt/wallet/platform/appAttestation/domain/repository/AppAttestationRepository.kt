@@ -4,6 +4,7 @@ import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AppAttestationRepositoryError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationChallengeResponse
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationResponse
+import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestationJwt
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestationResponse
 import com.github.michaelbull.result.Result
 
@@ -17,4 +18,12 @@ interface AppAttestationRepository {
         url: String,
         publicKey: Jwk,
     ): Result<KeyAttestationResponse, AppAttestationRepositoryError>
+
+    /**
+     * Returns one attestation per requested key, in the order of [publicKeys].
+     */
+    suspend fun fetchBatchKeyAttestation(
+        url: String,
+        publicKeys: List<Jwk>,
+    ): Result<List<KeyAttestationJwt>, AppAttestationRepositoryError>
 }

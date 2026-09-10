@@ -14,7 +14,7 @@ import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBindingType
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryption
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionKeyPair
 import ch.admin.foitt.openid4vc.domain.repository.CredentialOfferRepository
-import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWE
+import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWEWithSoftwareKey
 import ch.admin.foitt.openid4vc.util.SafeJsonTestInstance
 import ch.admin.foitt.openid4vc.util.assertErrorType
 import ch.admin.foitt.openid4vc.util.assertOk
@@ -65,7 +65,7 @@ class CredentialOfferRepositoryImplTest {
     private lateinit var handler: (suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData)
 
     @MockK
-    private lateinit var mockDecryptJWE: DecryptJWE
+    private lateinit var mockDecryptJWEWithSoftwareKey: DecryptJWEWithSoftwareKey
 
     private val json = SafeJsonTestInstance.safeJson
 
@@ -92,7 +92,7 @@ class CredentialOfferRepositoryImplTest {
         repo = CredentialOfferRepositoryImpl(
             httpClient = mockHttpClient,
             safeJson = json,
-            decryptJWE = mockDecryptJWE,
+            decryptJWEWithSoftwareKey = mockDecryptJWEWithSoftwareKey,
         )
     }
 
@@ -413,7 +413,9 @@ class CredentialOfferRepositoryImplTest {
             )
         }
 
-        coEvery { mockDecryptJWE(httpResponseString, keyPair.private) } returns Ok(payload)
+        coEvery {
+            mockDecryptJWEWithSoftwareKey(httpResponseString, keyPair.private, any())
+        } returns Ok(payload)
         return createResponseEncryption(keyPair)
     }
 

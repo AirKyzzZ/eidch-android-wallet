@@ -27,12 +27,14 @@ internal class CacheIssuerDisplayDataImpl @Inject constructor(
 
         val issuerTrustNameDisplay: List<ActorField<String>> = issuerDisplays.toIssuerName()
         val issuerTrustLogoDisplay: List<ActorField<String>> = issuerDisplays.toIssuerLogo()
+        val issuerTrustLogoImageData: List<ActorField<ByteArray>> = issuerDisplays.toIssuerLogoImageData()
 
         val reasonDisplay: List<ActorField<String>>? = nonComplianceData.reasonDisplays?.toNonComplianceReason()
 
         val offerIssuerDisplay = ActorDisplayData(
             name = issuerTrustNameDisplay,
             image = issuerTrustLogoDisplay,
+            imageData = issuerTrustLogoImageData,
             trustStatus = trustStatus,
             vcSchemaTrustStatus = trustCheckResult?.vcSchemaTrustStatus ?: VcSchemaTrustStatus.UNPROTECTED,
             preferredLanguage = null,
@@ -74,5 +76,14 @@ internal class CacheIssuerDisplayDataImpl @Inject constructor(
             value = entry.reason,
             locale = entry.locale,
         )
+    }
+
+    private fun List<AnyIssuerDisplay>.toIssuerLogoImageData(): List<ActorField<ByteArray>> = mapNotNull { entry ->
+        entry.logoImageData?.let {
+            ActorField(
+                value = it,
+                locale = entry.locale ?: DisplayLanguage.UNKNOWN,
+            )
+        }
     }
 }

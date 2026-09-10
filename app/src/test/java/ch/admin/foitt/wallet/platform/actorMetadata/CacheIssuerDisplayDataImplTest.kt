@@ -72,6 +72,7 @@ class CacheIssuerDisplayDataImplTest {
         val expectedActorDisplayData = ActorDisplayData(
             name = mockMetadataNameDisplays,
             image = mockMetadataLogoDisplays,
+            imageData = mockMetadataLogoImageData,
             trustStatus = TrustStatus.TRUSTED,
             vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
             preferredLanguage = null,
@@ -179,6 +180,7 @@ class CacheIssuerDisplayDataImplTest {
         locale = "en-us",
         name = "credentialIssuer01",
         logo = "credentialImage01",
+        logoImageData = "imageData01".toByteArray(),
         logoAltText = null,
     )
 
@@ -186,6 +188,7 @@ class CacheIssuerDisplayDataImplTest {
         locale = "de-de",
         name = "credentialIssuer02",
         logo = "credentialImage02",
+        logoImageData = "imageData02".toByteArray(),
         logoAltText = null,
     )
 
@@ -205,6 +208,15 @@ class CacheIssuerDisplayDataImplTest {
         entry.logo?.let {
             ActorField(
                 value = entry.logo,
+                locale = entry.locale ?: DisplayLanguage.UNKNOWN,
+            )
+        }
+    }
+
+    private val mockMetadataLogoImageData = credentialIssuerDisplays.mapNotNull { entry ->
+        entry.logoImageData?.let {
+            ActorField(
+                value = it,
                 locale = entry.locale ?: DisplayLanguage.UNKNOWN,
             )
         }

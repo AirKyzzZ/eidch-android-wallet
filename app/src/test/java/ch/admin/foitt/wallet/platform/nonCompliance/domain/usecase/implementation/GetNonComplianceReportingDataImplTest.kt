@@ -4,6 +4,7 @@ import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorField
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorMetadataDisplayData
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetLocalizedActorImageData
 import ch.admin.foitt.wallet.platform.actorMetadata.mock.ActorMetadataMocks.mockActorDisplayData01
 import ch.admin.foitt.wallet.platform.database.domain.model.RawCredentialData
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
@@ -15,7 +16,6 @@ import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.RawCredentialDataRepository
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialRepository
 import ch.admin.foitt.wallet.platform.utils.compress
-import ch.admin.foitt.wallet.platform.utils.domain.usecase.GetImageDataFromUri
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -40,7 +40,7 @@ class GetNonComplianceReportingDataImplTest {
     private lateinit var mockVerifiableCredentialRepository: VerifiableCredentialRepository
 
     @MockK
-    private lateinit var mockGetImageDataFromUri: GetImageDataFromUri
+    private lateinit var mockGetLocalizedActorImageData: GetLocalizedActorImageData
 
     @MockK
     private lateinit var mockGetLocalizedDisplay: GetLocalizedDisplay
@@ -59,8 +59,8 @@ class GetNonComplianceReportingDataImplTest {
         useCase = GetNonComplianceReportingDataImpl(
             rawCredentialDataRepository = mockRawCredentialDataRepository,
             verifiableCredentialRepository = mockVerifiableCredentialRepository,
-            getImageDataFromUri = mockGetImageDataFromUri,
             getLocalizedDisplay = mockGetLocalizedDisplay,
+            getLocalizedActorImageData = mockGetLocalizedActorImageData,
         )
     }
 
@@ -76,7 +76,6 @@ class GetNonComplianceReportingDataImplTest {
         val compressedMetadata = rawMetadata.compress()
         val issuerDid = "issuerDid"
         val localizedName = "localizedName"
-        val iconUri = "iconUri"
         val iconBytes = "iconBytes".toByteArray()
 
         every { mockRawCredentialData.rawOIDMetadata } returns compressedMetadata
@@ -89,11 +88,7 @@ class GetNonComplianceReportingDataImplTest {
             mockGetLocalizedDisplay(actorDisplayData.name!!, actorDisplayData.preferredLanguage)
         } returns ActorField(value = localizedName, locale = "de")
 
-        every {
-            mockGetLocalizedDisplay(actorDisplayData.image!!, actorDisplayData.preferredLanguage)
-        } returns ActorField(value = iconUri, locale = "de")
-
-        coEvery { mockGetImageDataFromUri(iconUri) } returns iconBytes
+        coEvery { mockGetLocalizedActorImageData(actorDisplayData) } returns iconBytes
 
         val result = useCase(CREDENTIAL_ID, actorDisplayData, ACTIVITY_TYPE)
 
@@ -124,6 +119,8 @@ class GetNonComplianceReportingDataImplTest {
         every {
             mockGetLocalizedDisplay(any<Collection<ActorField<String>>>(), any())
         } returns null
+
+        coEvery { mockGetLocalizedActorImageData(actorDisplayData) } returns null
 
         val result = useCase(CREDENTIAL_ID, actorDisplayData, ACTIVITY_TYPE)
 

@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 data class ActorDisplayData(
     val name: List<ActorField<String>>?,
     val image: List<ActorField<String>>?,
+    val imageData: List<ActorField<ByteArray>>? = null,
     val preferredLanguage: String?,
     val trustStatus: TrustStatus,
     val vcSchemaTrustStatus: VcSchemaTrustStatus,

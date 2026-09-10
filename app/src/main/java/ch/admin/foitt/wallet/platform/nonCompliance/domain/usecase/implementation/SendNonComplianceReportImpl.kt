@@ -11,6 +11,7 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.model.RequestClientA
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.GenerateProofOfPossession
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestClientAttestation
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetCurrentAppLocale
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceError
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceMetadata
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportReason
@@ -46,6 +47,7 @@ class SendNonComplianceReportImpl @Inject constructor(
     private val safeJson: SafeJson,
     private val generateProofOfPossession: GenerateProofOfPossession,
     private val environmentSetupRepository: EnvironmentSetupRepository,
+    private val getCurrentAppLocale: GetCurrentAppLocale,
 ) : SendNonComplianceReport {
     override suspend fun invoke(
         activityId: Long,
@@ -79,6 +81,7 @@ class SendNonComplianceReportImpl @Inject constructor(
             type = reportReason.type,
             description = description,
             email = email,
+            language = getCurrentAppLocale().language,
             metadata = nonComplianceMetadata
         )
 

@@ -132,6 +132,7 @@ class GetAuthorizationResponseConfigImplTest {
     @Test
     fun `For response mode 'direct_post(dot)jwt' where no jwk is provided returns an error`() = runTest {
         every { mockClientMetadata.jwks } returns Jwks(keys = emptyList())
+        every { mockAuthorizationRequest.responseMode } returns RESPONSE_MODE_DIRECT_POST_JWT
 
         useCase(
             anyCredential = mockAnyCredential,
@@ -183,6 +184,53 @@ class GetAuthorizationResponseConfigImplTest {
             authorizationRequest = mockAuthorizationRequest,
             PresentationFlowContext(dcqlQueryId = DCQL_QUERY_ID),
         ).assertErrorType(PresentationRequestError.Unexpected::class)
+    }
+
+    // NOTE: This is a legacy test which is here during migration. In the proximity case
+    // dc_api.jwt was used, although the oid4vp payload was not encrpted, as there is
+    // already encryption on the proximity transport protocol level.
+    @Test
+    fun `For response mode 'dc_api(dot)jwt' return non JWE response`() = runTest {
+        every { mockClientMetadata.jwks } returns null
+        every { mockAuthorizationRequest.responseMode } returns RESPONSE_MODE_DC_API_JWT
+        every { mockAuthorizationRequest.state } returns null
+
+        val result = useCase(
+            anyCredential = mockAnyCredential,
+            authorizationRequest = mockAuthorizationRequest,
+            presentationContext = PresentationFlowContext(dcqlQueryId = DCQL_QUERY_ID),
+        ).assertOk()
+
+        val expected = AuthorizationResponseConfig(
+            type = AuthorizationResponseType.DCQL,
+            params = mapOf(
+                AuthorizationResponseParam.VP_TOKEN to safeJson.safeEncodeObjectToString(mapOf(DCQL_QUERY_ID to listOf(VP_TOKEN))).value,
+            ),
+        )
+
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun `For response mode 'dc_api' return non JWE response`() = runTest {
+        every { mockClientMetadata.jwks } returns null
+        every { mockAuthorizationRequest.responseMode } returns RESPONSE_MODE_DC_API
+        every { mockAuthorizationRequest.state } returns null
+
+        val result = useCase(
+            anyCredential = mockAnyCredential,
+            authorizationRequest = mockAuthorizationRequest,
+            presentationContext = PresentationFlowContext(dcqlQueryId = DCQL_QUERY_ID),
+        ).assertOk()
+
+        val expected = AuthorizationResponseConfig(
+            type = AuthorizationResponseType.DCQL,
+            params = mapOf(
+                AuthorizationResponseParam.VP_TOKEN to safeJson.safeEncodeObjectToString(mapOf(DCQL_QUERY_ID to listOf(VP_TOKEN))).value,
+            ),
+        )
+
+        assertEquals(expected, result)
     }
 
     @Test
@@ -268,6 +316,8 @@ class GetAuthorizationResponseConfigImplTest {
     private companion object Companion {
         const val RESPONSE_MODE_DIRECT_POST = "direct_post"
         const val RESPONSE_MODE_DIRECT_POST_JWT = "direct_post.jwt"
+        const val RESPONSE_MODE_DC_API_JWT = "dc_api.jwt"
+        const val RESPONSE_MODE_DC_API = "dc_api"
         const val X_VALUE = "x value"
         const val Y_VALUE = "y value"
         const val CURVE = "P-256"

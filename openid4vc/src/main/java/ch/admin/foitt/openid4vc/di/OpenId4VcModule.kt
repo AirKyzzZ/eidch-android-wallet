@@ -57,9 +57,11 @@ import ch.admin.foitt.openid4vc.domain.usecase.implementation.SubmitAnyCredentia
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.ValidateIssuerMetadataJwtImpl
 import ch.admin.foitt.openid4vc.domain.usecase.implementation.VerifyRequestObjectSignatureImpl
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.CreateJWE
-import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWE
+import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWEWithHardwareKey
+import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWEWithSoftwareKey
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.implementation.CreateJWEImpl
-import ch.admin.foitt.openid4vc.domain.usecase.jwe.implementation.DecryptJWEImpl
+import ch.admin.foitt.openid4vc.domain.usecase.jwe.implementation.DecryptJWEWithHardwareKeyImpl
+import ch.admin.foitt.openid4vc.domain.usecase.jwe.implementation.DecryptJWEWithSoftwareKeyImpl
 import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignature
 import ch.admin.foitt.openid4vc.domain.usecase.jwt.VerifyJwtSignatureFromDid
 import ch.admin.foitt.openid4vc.domain.usecase.jwt.implementation.VerifyJwtSignatureFromDidImpl
@@ -111,8 +113,8 @@ class OpenId4VcModule {
     internal fun provideCredentialOfferRepository(
         @Named(NAMED_DEFAULT_HTTP_CLIENT) httpClient: HttpClient,
         safeJson: SafeJson,
-        decryptJWE: DecryptJWE,
-    ): CredentialOfferRepository = CredentialOfferRepositoryImpl(httpClient, safeJson, decryptJWE)
+        decryptJWEWithSoftwareKey: DecryptJWEWithSoftwareKey,
+    ): CredentialOfferRepository = CredentialOfferRepositoryImpl(httpClient, safeJson, decryptJWEWithSoftwareKey)
 
     @Provides
     internal fun providesPresentationRequestRepository(
@@ -366,9 +368,14 @@ internal interface OpenId4VCBindings {
     ): FetchVcSchema
 
     @Binds
-    fun bindDecryptJWE(
-        useCase: DecryptJWEImpl
-    ): DecryptJWE
+    fun bindDecryptJWEWithSoftwareKey(
+        useCase: DecryptJWEWithSoftwareKeyImpl
+    ): DecryptJWEWithSoftwareKey
+
+    @Binds
+    fun bindDecryptJWEWithHardwareKey(
+        useCase: DecryptJWEWithHardwareKeyImpl
+    ): DecryptJWEWithHardwareKey
 
     @Binds
     fun bindCreateJWE(

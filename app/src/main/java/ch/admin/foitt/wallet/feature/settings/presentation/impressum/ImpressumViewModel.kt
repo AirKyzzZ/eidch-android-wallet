@@ -21,7 +21,7 @@ class ImpressumViewModel @Inject constructor(
 
     fun onGithub() = appContext.openLink(R.string.tk_settings_imprint_appInformation_github_link_value)
 
-    fun onMoreInformation() = appContext.openLink(R.string.tk_settings_imprint_publisher_link_value)
+    fun onMoreInformation() = appContext.openLink(R.string.settings_legalNotice_publisher_linkValue)
 
     fun onLegals() = appContext.openLink(R.string.tk_settings_imprint_legal_termsOfUse_link_value)
 }

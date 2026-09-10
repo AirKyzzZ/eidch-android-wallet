@@ -14,6 +14,8 @@ data class NonComplianceRequest(
     val description: String,
     @SerialName("email")
     val email: String? = null,
+    @SerialName("language")
+    val language: String? = null,
     @SerialName("metadata")
     val metadata: NonComplianceMetadata
 )

@@ -53,8 +53,8 @@
     <string name="tk_error_notusable_title">Il codice QR non è più valido</string>
     <string name="tk_error_strongboxUnavailable_body">Questo documento non può essere salvato perché la protezione non è garantita su questo dispositivo.</string>
     <string name="tk_error_strongboxUnavailable_title">Dispositivo non supportato</string>
-    <string name="tk_getBetaId_create_body">Il seguente collegamento ti porterà a un sito Web esterno in cui puoi creare un Beta-ID.\n\nPuoi quindi importarli e testare l\'app swiyu con essi.</string>
-    <string name="tk_getBetaId_create_title">Crea un Beta-ID</string>
+    <string name="getBetaId_body">Il seguente collegamento ti porterà a un sito Web esterno in cui puoi creare un Beta-ID.\n\nPuoi quindi importarli e testare l\'app swiyu con essi.</string>
+    <string name="getBetaId_title">Crea un Beta-ID</string>
     <string name="tk_getBetaId_error_smallbody">Codice errore: VXA - 1009</string>
     <string name="tk_getBetaId_firstUse_body">Aggiungi un Beta-ID per testare l\'app swiyu.</string>
     <string name="tk_getBetaId_firstUse_title">Wallet vuoto</string>
@@ -102,7 +102,7 @@
     <string name="tk_global_delete">Elimina</string>
     <string name="tk_global_externalLink_hint">Il link esce dall’app</string>
     <string name="tk_global_getEid_greenButton">Richiedere l’e-ID</string>
-    <string name="tk_global_getbetaid_primarybutton">Crea un Beta-ID</string>
+    <string name="getBetaId_button">Crea un Beta-ID</string>
     <string name="tk_global_hiddenGoToTop">Tornare in alto</string>
     <string name="tk_global_invisible_alt">La password è nascosta. Mostra password.</string>
     <string name="tk_global_login_primarybutton">Accedi</string>
@@ -143,7 +143,7 @@
     <string name="tk_login_variant_body">L\'app swiyu è bloccata</string>
     <string name="tk_menu_activatingBiometrics_android_body">Inserisci la tua password swiyu per attivare lo sblocco biometrico.</string>
     <string name="tk_menu_deactivatingBiometrics_android_note">Inserisci la tua password swiyu per disabilitare lo sblocco biometrico.</string>
-    <string name="tk_menu_homeList_menu_add">Creare Beta-ID</string>
+    <string name="menu_orderBetaId_body">Crea un Beta-ID</string>
     <string name="tk_onboarding_analytics_button_primary">Autorizza</string>
     <string name="tk_onboarding_analytics_button_secondary">Rifiuta</string>
     <string name="tk_onboarding_analytics_primary">Contribuire anonimamente al miglioramento dell’app</string>
@@ -204,6 +204,7 @@
     <string name="tk_present_review_loading">Attenda per favore</string>
     <string name="tk_qrscanner_scanning_body">Scansioni il codice QR per confermare la sua identità o ricevere un documento.</string>
     <string name="tk_qrscanner_scanning_title">Scansionare il codice QR</string>
+    <string name="tk_qrScanner_loadingSpinner_alt">Attenda per favore</string>
     <string name="tk_receive_cameraaccessneeded1_body">La fotocamera è importante. Senza non potrà né ricevere documenti né provare la Sua identità.</string>
     <string name="tk_receive_cameraaccessneeded1_title">Autorizza l’accesso alla fotocamera</string>
     <string name="tk_receive_cameraaccessneeded2_body">L’accesso alla fotocamera è scaduto. Autorizzi nuovamente l’accesso.</string>
@@ -225,9 +226,9 @@
     <string name="tk_settings_diagnosticData_title">Dati diagnostici</string>
     <string name="tk_settings_general_feedback_link_text">Invio feedback</string>
     <string name="tk_settings_general_feedback_link_value">https://findmind.ch/c/feedback_public_beta_it</string>
-    <string name="tk_settings_general_imprint">Note legali</string>
-    <string name="tk_settings_general_licences">Licenze</string>
-    <string name="tk_settings_general_sectionTitle">Generale</string>
+    <string name="settings_legal_legalNotice_body">Note legali</string>
+    <string name="settings_legal_licences_body">Licenze</string>
+    <string name="settings_legal_sectionTitle">Generale</string>
     <string name="tk_settings_imprint_appInformation_appVersion">Versione dell’app</string>
     <string name="tk_settings_imprint_appInformation_body">L’app swiyu è open source. Il codice sorgente può essere consultato su GitHub.</string>
     <string name="tk_settings_imprint_appInformation_github_link_value">https://github.com/swiyu-admin-ch</string>
@@ -235,8 +236,6 @@
     <string name="tk_settings_imprint_legal_sectionTitle">Aspetti giuridici</string>
     <string name="tk_settings_imprint_legal_termsOfUse_link_text">Condizioni di utilizzo</string>
     <string name="tk_settings_imprint_legal_termsOfUse_link_value">https://www.eid.admin.ch/it/swiyu-terms-i</string>
-    <string name="tk_settings_imprint_publisher_link_text">www.bj.admin.ch</string>
-    <string name="tk_settings_imprint_publisher_link_value">https://www.bj.admin.ch/it</string>
     <string name="tk_settings_imprint_publisher_name">Dipartimento federale di giustizia e polizia DFGP \nUfficio federale di giustizia UFG</string>
     <string name="tk_settings_imprint_publisher_sectionTitle">Emittente, attuazione e gestione</string>
     <string name="tk_settings_imprint_title">Colofone</string>
@@ -246,18 +245,17 @@
     <string name="tk_settings_securityPrivacy_dataProtection_privacyPolicy_link_text">Dichiarazione sulla protezione dei dati</string>
     <string name="tk_settings_securityPrivacy_dataProtection_shareData_primary">Condividere dati diagnostici</string>
     <string name="tk_settings_securityPrivacy_dataProtection_shareData_secondary">Per creare una e-ID abbiamo bisogno del suo consenso all’informativa sulla protezione dei dati.</string>
-    <string name="tk_settings_wallet_sectionTitle">wallet</string>
-    <string name="tk_settings_wallet_securityPrivacy">Sicurezza e protezione dei dati</string>
+    <string name="settings_general_sectionTitle">wallet</string>
+    <string name="settings_general_securityPrivacy_body">Sicurezza &amp; protezione dei dati</string>
     <string name="tk_versionEnforcement_button">Aggiorna l\'app</string>
-    <string name="version_enforcement_store_link">https://play.google.com/store/apps/details?id=ch.admin.foitt.swiyu</string>
-    <string name="tk_settings_general_help_link_value">https://www.eid.admin.ch/it/hilfe-i</string>
+    <string name="settings_help_contact_linkValue">https://www.eid.admin.ch/it/hilfe-i</string>
     <string name="tk_issuer_legitimate">Emissione autorizzata</string>
     <string name="tk_issuer_notLegitimate">Emissione non autorizzata</string>
     <string name="tk_verifier_legitimate">Verificatore autorizzato</string>
     <string name="tk_verifier_notLegitimate">Verificatore non autorizzato</string>
-    <string name="tk_settings_title">Impostazioni</string>
-    <string name="tk_settings_wallet_language">Lingua</string>
-    <string name="tk_settings_general_help_link_text">Aiuto &amp; contatti</string>
+    <string name="settings_screenTitle">Impostazioni</string>
+    <string name="settings_general_language_body">Lingua</string>
+    <string name="settings_help_contact_linkText">Aiuto &amp; contatti</string>
     <string name="biometricsPrompt_title">Sblocco con dati biometrici</string>
     <string name="biometrics_lockout_text">L’uso dei dati biometrici è temporaneamente bloccato. Riprovi più tardi.</string>
     <string name="biometrics_lockout_title">Accesso biometrico bloccato</string>
@@ -391,9 +389,9 @@
     <string name="tk_home_scan_button">Scansiona</string>
     <string name="tk_home_scan_button_altText">Scansiona il codice QR per identificarti o aggiungere un documento.</string>
     <string name="tk_issuer_notInSystem">Sconosciuto</string>
-    <string name="tk_menu_homeList_help">Aiuto</string>
-    <string name="tk_menu_homeList_orderEid">Ordini e-ID</string>
-    <string name="tk_menu_homeList_settings">Impostazioni</string>
+    <string name="menu_help_body">Aiuto &amp; contatto</string>
+    <string name="menu_orderEid_body">Ordini e-ID</string>
+    <string name="menu_settings_body">Impostazioni</string>
     <string name="tk_menu_language_android_selected_language">Lingua selezionata</string>
     <string name="tk_present_review_confirmPresentation_button_primary">Condividi dati</string>
     <string name="tk_present_review_confirmPresentation_button_secondary">Rifiutare la condivisione dei dati</string>
@@ -788,7 +786,7 @@
     <string name="avbeam_error_empty_package">Empty package - %s type</string>
     <string name="tk_eidRequest_walletPairing_currentDevice_sectionTitle_sync">Dispositivo 1</string>
     <string name="tk_eidRequest_otp_settings_toggle">Bypass OTP</string>
-    <string name="tk_settings_general_accessibility">Accessibilità</string>
+    <string name="settings_legal_accessibility_body">Accessibilità</string>
     <string name="tk_settings_accessibility_declaration_link_value">https://www.eid.admin.ch/it/accessibilita-nellamministrazione-federale</string>
     <string name="tk_settings_accessibility_declaration_link_text">Dichiarazione di accessibilità</string>
     <string name="tk_deferredCredentialDetails_invalid_contentTitle">Perché il documento è non valido?</string>
@@ -855,4 +853,6 @@
     <string name="tk_credentialDetail_batchIssuanceInfo_title">Emissione in batch</string>
     <string name="tk_credentialDetail_batchIssuanceInfo_body">Questo documento è stato emesso come batch.\n\nA ogni presentazione viene utilizzato un nuovo singolo documento del batch.\n\nLa separazione tecnica dei singoli utilizzi offre una protezione supplementare della privacy.</string>
     <string name="tk_credentialDetail_batchIssuanceInfo_usageDetails_title">Dettagli di utilizzo</string>
+    <string name="settings_legalNotice_publisher_linkText">www.bj.admin.ch</string>
+    <string name="settings_legalNotice_publisher_linkValue">https://www.bj.admin.ch/it</string>
 </resources>

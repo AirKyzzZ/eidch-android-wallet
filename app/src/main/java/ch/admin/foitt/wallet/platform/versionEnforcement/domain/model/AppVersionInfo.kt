@@ -4,7 +4,7 @@ sealed interface AppVersionInfo {
     data class Blocked(
         val title: String?,
         val text: String?,
-        val playStoreUrl: String? = null,
+        val playStoreUrl: String,
         val type: EnforcementType = EnforcementType.APP_BLOCKED
     ) : AppVersionInfo
     data object Valid : AppVersionInfo

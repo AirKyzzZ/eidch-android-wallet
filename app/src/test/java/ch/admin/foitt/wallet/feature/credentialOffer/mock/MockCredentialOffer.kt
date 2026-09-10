@@ -5,6 +5,7 @@ import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnviron
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.model.toDisplayStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialClaimCluster
@@ -16,18 +17,24 @@ object MockCredentialOffer {
     const val ISSUER = "issuer"
 
     private val credentialDisplay1 = CredentialDisplay(
-        id = 23,
-        credentialId = CREDENTIAL_ID,
-        locale = "locale1",
-        name = "name1",
-        backgroundColor = "#ff000000"
+        entity = CredentialDisplayEntity(
+            id = 23,
+            credentialId = CREDENTIAL_ID,
+            locale = "locale1",
+            name = "name1",
+            backgroundColor = "#ff000000"
+        ),
+        logo = null
     )
 
     private val credentialDisplay2 = CredentialDisplay(
-        id = 24,
-        credentialId = CREDENTIAL_ID,
-        locale = "locale2",
-        name = "name2",
+        entity = CredentialDisplayEntity(
+            id = 24,
+            credentialId = CREDENTIAL_ID,
+            locale = "locale2",
+            name = "name2",
+        ),
+        logo = null
     )
 
     val credentialDisplays = listOf(credentialDisplay1, credentialDisplay2)

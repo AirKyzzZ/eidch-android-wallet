@@ -12,7 +12,6 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.Cluster
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedCredentialInformationDisplay
 import ch.admin.foitt.wallet.platform.oca.domain.model.MetaDisplays
@@ -93,7 +92,7 @@ class GenerateAnyDisplaysImplTest {
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = LANGUAGE_EN, name = TRUST_ISSUER_NAME_EN, logo = METADATA_LOGO_URI),
             AnyIssuerDisplay(locale = LANGUAGE_FR, name = TRUST_ISSUER_NAME_FR),
-            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
+            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = null)
         )
 
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)
@@ -107,7 +106,7 @@ class GenerateAnyDisplaysImplTest {
 
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = LANGUAGE_EN, name = METADATA_ISSUER_NAME_EN, logo = METADATA_LOGO_URI),
-            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
+            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = null)
         )
 
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)
@@ -120,7 +119,7 @@ class GenerateAnyDisplaysImplTest {
         val result = useCase(mockAnyCredential, mockIssuerInfo, null, mockCredentialConfiguration, mockOcaBundle).assertOk()
 
         val expectedIssuerDisplays = listOf(
-            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
+            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = null)
         )
 
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)
@@ -133,7 +132,7 @@ class GenerateAnyDisplaysImplTest {
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = LANGUAGE_EN, name = TRUST_ISSUER_NAME_EN, logo = METADATA_LOGO_URI),
             AnyIssuerDisplay(locale = LANGUAGE_FR, name = TRUST_ISSUER_NAME_FR),
-            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
+            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = null)
         )
 
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)

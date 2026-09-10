@@ -21,9 +21,13 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.util.getBase64Certif
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.CreateJWSKeyPairError
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.KeySupportsPurposes
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import timber.log.Timber
 import javax.inject.Inject
 
 class RequestClientAttestationImpl @Inject constructor(
@@ -33,20 +37,49 @@ class RequestClientAttestationImpl @Inject constructor(
     private val validateClientAttestation: ValidateClientAttestation,
     private val createJWSKeyPairInHardware: CreateJWSKeyPairInHardware,
     private val createJwk: CreateJwk,
+    private val keySupportsPurposes: KeySupportsPurposes,
 ) : RequestClientAttestation {
     override suspend operator fun invoke(
         keyAlias: String,
         signingAlgorithm: SigningAlgorithm,
     ): Result<ClientAttestation, RequestClientAttestationError> = coroutineBinding {
-        // Early return for existing valid attestation
+        rotationLock.withLock {
+            getUsableAttestation(keyAlias).bind()?.let { return@withLock it }
+
+            rotateAndAttest(keyAlias, signingAlgorithm).bind()
+        }
+    }
+
+    /**
+     * Returns the stored attestation when it can still be used as is, or null when it has to be rotated.
+     */
+    private suspend fun getUsableAttestation(
+        keyAlias: String,
+    ): Result<ClientAttestation?, RequestClientAttestationError> = coroutineBinding {
         val currentClientAttestation = currentClientAttestationRepository.get(
             keyPairAlias = keyAlias
         ).mapError(ClientAttestationRepositoryError::toRequestClientAttestationError).bind()
 
-        if (currentClientAttestation != null && currentClientAttestation.attestation.jwtValidity !is Validity.Expired) {
-            return@coroutineBinding currentClientAttestation
+        if (currentClientAttestation == null || currentClientAttestation.attestation.jwtValidity is Validity.Expired) {
+            return@coroutineBinding null
         }
 
+        val keyIsUsable = keySupportsPurposes(
+            keyAlias = currentClientAttestation.keyStoreAlias,
+            provider = Constants.ANDROID_KEY_STORE,
+            purposes = ClientAttestation.KEY_PURPOSES,
+        )
+        if (!keyIsUsable) {
+            Timber.d("Client attestation key lacks the required purposes, will regenerate it")
+        }
+
+        currentClientAttestation.takeIf { keyIsUsable }
+    }
+
+    private suspend fun rotateAndAttest(
+        keyAlias: String,
+        signingAlgorithm: SigningAlgorithm,
+    ): Result<ClientAttestation, RequestClientAttestationError> = coroutineBinding {
         val challengeResponse = appAttestationRepository
             .fetchChallenge(environmentSetupRepository.defaultAttestationServiceUrl)
             .mapError(AppAttestationRepositoryError::toRequestClientAttestationError)
@@ -57,6 +90,7 @@ class RequestClientAttestationImpl @Inject constructor(
             signingAlgorithm = signingAlgorithm,
             provider = Constants.ANDROID_KEY_STORE,
             attestationChallenge = challengeResponse.challenge.encodeToByteArray(),
+            purposes = ClientAttestation.KEY_PURPOSES,
         ).mapError(CreateJWSKeyPairError::toRequestClientAttestationError).bind()
 
         currentClientAttestationRepository.delete(keyAlias)
@@ -91,5 +125,15 @@ class RequestClientAttestationImpl @Inject constructor(
             .mapError(ClientAttestationRepositoryError::toRequestClientAttestationError).bind()
 
         clientAttestation
+    }
+
+    private companion object {
+        /**
+         * Serializes rotations across the whole process. A rotation replaces the keystore entry and the
+         * database row behind a single fixed alias, so two concurrent rotations destroy each other's key.
+         * The lock has to be static because this use case is an unscoped binding and gets instantiated
+         * once per injection point.
+         */
+        val rotationLock = Mutex()
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import ch.admin.foitt.wallet.platform.permission.domain.model.BluetoothState
 import ch.admin.foitt.wallet.platform.permission.presentation.PermissionScaffold
+import ch.admin.foitt.wallet.platform.utils.openAppDetailsSettings
 
 @SuppressLint("InlinedApi")
 @Composable
@@ -74,6 +75,12 @@ fun BluetoothStateScaffold(
             updateContentShown(false)
             BluetoothPermissionNotGrantedScreenContent(
                 onAllow = handler::requestPermission,
+            )
+        },
+        permissionRationaleContent = {
+            updateContentShown(false)
+            BluetoothPermissionRationalScreenContent(
+                onOpenSettings = { context.openAppDetailsSettings() }
             )
         },
         permissionGrantedContent = {

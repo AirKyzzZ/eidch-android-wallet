@@ -167,6 +167,7 @@ private fun CredentialDetailScreenContent(
     ) {
         when (windowWidthClass) {
             WindowWidthClass.COMPACT -> CredentialDetailCompact(
+                nonComplianceEnabled = nonComplianceEnabled,
                 credentialDetail = credentialDetail,
                 credentialHistoryFocusRequester = credentialHistoryFocusRequester,
                 onEntireHistory = onEntireHistory,
@@ -191,6 +192,7 @@ private fun CredentialDetailScreenContent(
 
 @Composable
 private fun CredentialDetailCompact(
+    nonComplianceEnabled: Boolean,
     credentialDetail: CredentialDetailUiState,
     credentialHistoryFocusRequester: FocusRequester,
     onEntireHistory: () -> Unit,
@@ -262,20 +264,22 @@ private fun CredentialDetailCompact(
             onIssuanceInfoClick = onIssuanceInfo,
         )
 
-        item {
-            Spacer(modifier = Modifier.height(Sizes.s06))
-        }
+        if (nonComplianceEnabled) {
+            item {
+                Spacer(modifier = Modifier.height(Sizes.s06))
+            }
 
-        clusterLazyListItem(
-            isFirstItem = true,
-            isLastItem = true,
-            paddingValues = PaddingValues(horizontal = Sizes.s04),
-        ) {
-            DestructiveActionButton(
-                title = R.string.tk_activity_activityDetail_reportIssuer_button,
-                leadingIcon = R.drawable.wallet_ic_flag,
-                onClick = onReportIssuer,
-            )
+            clusterLazyListItem(
+                isFirstItem = true,
+                isLastItem = true,
+                paddingValues = PaddingValues(horizontal = Sizes.s04),
+            ) {
+                DestructiveActionButton(
+                    title = R.string.tk_activity_activityDetail_reportIssuer_button,
+                    leadingIcon = R.drawable.wallet_ic_flag,
+                    onClick = onReportIssuer,
+                )
+            }
         }
     }
 }

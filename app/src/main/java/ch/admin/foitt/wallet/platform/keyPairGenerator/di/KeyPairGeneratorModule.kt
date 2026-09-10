@@ -3,9 +3,11 @@ package ch.admin.foitt.wallet.platform.keyPairGenerator.di
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInSoftware
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateKeyGenSpec
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.KeySupportsPurposes
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateJWSKeyPairInHardwareImpl
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateJWSKeyPairInSoftwareImpl
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.CreateKeyGenSpecImpl
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.implementation.KeySupportsPurposesImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -32,4 +34,9 @@ internal interface KeyPairGeneratorBindingsModule {
     fun bindCreateJWSKeyPairInSoftware(
         useCase: CreateJWSKeyPairInSoftwareImpl
     ): CreateJWSKeyPairInSoftware
+
+    @Binds
+    fun bindKeySupportsPurposes(
+        useCase: KeySupportsPurposesImpl
+    ): KeySupportsPurposes
 }

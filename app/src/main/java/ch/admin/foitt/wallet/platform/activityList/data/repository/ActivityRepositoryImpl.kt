@@ -33,8 +33,8 @@ class ActivityRepositoryImpl @Inject constructor(
     daoProvider: DaoProvider,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val runInTransaction: RunInTransaction,
-    private val getLocalizedDisplay: GetLocalizedDisplay,
     private val getImageDataFromUri: GetImageDataFromUri,
+    private val getLocalizedDisplay: GetLocalizedDisplay,
 ) : ActivityRepository {
     override suspend fun saveActivity(
         credentialId: Long,
@@ -81,26 +81,34 @@ class ActivityRepositoryImpl @Inject constructor(
                 }
 
                 val images = actorDisplayData.image?.associateBy { it.locale } ?: emptyMap()
+                val imageDatas = actorDisplayData.imageData?.associateBy { it.locale } ?: emptyMap()
                 val names = actorDisplayData.name?.associateBy { it.locale } ?: emptyMap()
-                val locales = images.keys + names.keys
+                val locales = images.keys + imageDatas.keys + names.keys
 
                 val messageDigest = MessageDigest.getInstance("SHA-256")
 
                 locales.forEach { locale ->
-                    val image = actorDisplayData.image?.let {
-                        getLocalizedDisplay(it, locale)
-                    }
-                    val imageHash = image?.value?.let { imageUri ->
-                        val imageDataByteArray = getImageDataFromUri(imageUri)
-                        imageDataByteArray?.let {
-                            val hash = messageDigest.digest(imageDataByteArray).toHexString()
-                            val imageEntity = ImageEntity(
-                                hash = hash,
-                                image = imageDataByteArray
-                            )
-                            imageDao().insert(imageEntity)
-                            hash
+                    // The blob and URI locale sets routinely differ, so an exact map lookup
+                    // would leave name-only locales without a logo.
+                    val imageData = getLocalizedDisplay(
+                        displays = actorDisplayData.imageData.orEmpty(),
+                        preferredLocaleString = locale,
+                    )?.value
+                        ?: getLocalizedDisplay(
+                            displays = actorDisplayData.image.orEmpty(),
+                            preferredLocaleString = locale,
+                        )?.value?.let { imageUri ->
+                            getImageDataFromUri(imageUri)
                         }
+
+                    val imageHash = imageData?.let {
+                        val hash = messageDigest.digest(it).toHexString()
+                        val imageEntity = ImageEntity(
+                            hash = hash,
+                            image = it
+                        )
+                        imageDao().insert(imageEntity)
+                        hash
                     }
 
                     val activityActorDisplay = ActivityActorDisplayEntity(

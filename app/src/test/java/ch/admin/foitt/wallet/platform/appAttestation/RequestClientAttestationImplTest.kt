@@ -23,6 +23,7 @@ import ch.admin.foitt.wallet.platform.appAttestation.mock.KeyAttestationMocks
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.KeyPairError
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.CreateJWSKeyPairInHardware
+import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.usecase.KeySupportsPurposes
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -37,6 +38,10 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -80,6 +85,9 @@ class RequestClientAttestationImplTest {
     @MockK
     private lateinit var mockSignature: Signature
 
+    @MockK
+    private lateinit var mockKeySupportsPurposes: KeySupportsPurposes
+
     private lateinit var useCase: RequestClientAttestation
 
     @BeforeEach
@@ -93,6 +101,7 @@ class RequestClientAttestationImplTest {
             validateClientAttestation = mockValidateClientAttestation,
             createJWSKeyPairInHardware = mockCreateJWSKeyPairInHardware,
             createJwk = mockCreateJwk,
+            keySupportsPurposes = mockKeySupportsPurposes,
         )
 
         coEvery { mockEnvironmentSetupRepository.defaultAttestationServiceUrl } returns attestationServiceUrl
@@ -103,7 +112,9 @@ class RequestClientAttestationImplTest {
 
         coEvery { mockAppAttestationRepository.fetchChallenge(attestationServiceUrl) } returns Ok(challengeResponse)
 
-        coEvery { mockCreateJWSKeyPairInHardware(any(), any(), any(), any(), any()) } returns Ok(jwsKeyPair)
+        coEvery { mockCreateJWSKeyPairInHardware(any(), any(), any(), any(), any(), any()) } returns Ok(jwsKeyPair)
+
+        coEvery { mockKeySupportsPurposes(any(), any(), any()) } returns true
 
         coEvery { mockCreateJwk(any(), any()) } returns Ok(jwk)
 
@@ -142,7 +153,7 @@ class RequestClientAttestationImplTest {
         coVerifyOrder {
             mockClientAttestationRepository.get()
             mockAppAttestationRepository.fetchChallenge(attestationServiceUrl)
-            mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any())
+            mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any(), any())
             mockClientAttestationRepository.delete(any())
             mockCreateJwk.invoke(keyPair = keyPair, any())
             mockAppAttestationRepository.fetchClientAttestation(publicKey = any())
@@ -167,7 +178,7 @@ class RequestClientAttestationImplTest {
 
         coVerify(exactly = 0) {
             mockAppAttestationRepository.fetchChallenge(any())
-            mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any())
+            mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any(), any())
             mockClientAttestationRepository.delete(any())
             mockCreateJwk.invoke(keyPair = keyPair, any())
             mockAppAttestationRepository.fetchClientAttestation(publicKey = any())
@@ -215,7 +226,7 @@ class RequestClientAttestationImplTest {
         }
 
         coVerify(exactly = 0) {
-            mockCreateJWSKeyPairInHardware(any(), any(), any(), any(), any())
+            mockCreateJWSKeyPairInHardware(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -223,7 +234,7 @@ class RequestClientAttestationImplTest {
     fun `A JWSKeyPair creation failure is propagated`() = runTest {
         val exception = Exception("myException")
         coEvery {
-            mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any())
+            mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any(), any())
         } returns Err(KeyPairError.Unexpected(exception))
         val result = useCase()
         val error = result.assertErrorType(AttestationError.Unexpected::class)
@@ -290,5 +301,52 @@ class RequestClientAttestationImplTest {
         val result = useCase()
         val error = result.assertErrorType(AttestationError.Unexpected::class)
         assertEquals(exception, error.throwable)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `Concurrent callers rotate the client attestation only once`() = runTest {
+        val attestationRequested = CompletableDeferred<Unit>()
+        val releaseAttestation = CompletableDeferred<Unit>()
+        var storedAttestation: ClientAttestation? = null
+
+        coEvery { mockClientAttestationRepository.get(any()) } answers { Ok(storedAttestation) }
+        coEvery { mockClientAttestationRepository.save(mockClientAttestation) } answers {
+            storedAttestation = mockClientAttestation
+            Ok(0L)
+        }
+        coEvery { mockAppAttestationRepository.fetchClientAttestation(publicKey = any()) } coAnswers {
+            attestationRequested.complete(Unit)
+            releaseAttestation.await()
+            Ok(ClientAttestationResponse(clientAttestationRawJwt))
+        }
+
+        val firstCaller = async { useCase() }
+        attestationRequested.await() // the first caller now holds the lock
+        val secondCaller = async { useCase() }
+        runCurrent() // let the second caller pass the fast path and queue up on the lock
+        releaseAttestation.complete(Unit)
+
+        assertEquals(mockClientAttestation, firstCaller.await().assertOk())
+        assertEquals(mockClientAttestation, secondCaller.await().assertOk())
+
+        // The second caller has to pick up what the first one stored instead of rotating again,
+        // which would delete the key the first caller just had attested.
+        coVerify(exactly = 1) {
+            mockCreateJWSKeyPairInHardware.invoke(any(), any(), any(), any(), any(), any())
+            mockAppAttestationRepository.fetchClientAttestation(publicKey = any())
+            mockClientAttestationRepository.save(mockClientAttestation)
+        }
+    }
+
+    @Test
+    fun `A failed rotation releases the lock for the next caller`() = runTest {
+        coEvery { mockAppAttestationRepository.fetchChallenge(any()) } returns Err(AttestationError.NetworkError)
+        useCase().assertErrorType(AttestationError.NetworkError::class)
+
+        coEvery { mockAppAttestationRepository.fetchChallenge(attestationServiceUrl) } returns Ok(challengeResponse)
+        val result = useCase()
+
+        assertEquals(mockClientAttestation, result.assertOk())
     }
 }

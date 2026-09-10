@@ -5,7 +5,6 @@ import ch.admin.foitt.wallet.feature.eIdApplicationProcess.presentation.model.St
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.AutoVerificationResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdRequestError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StartAutoVerificationError
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.AbortSIdProcess
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.FetchSIdStatus
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.SetStartAutoVerificationResult
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.StartAutoVerification
@@ -38,7 +37,6 @@ internal class EIdStartAutoVerificationViewModel @AssistedInject constructor(
     private val startAutoVerification: StartAutoVerification,
     private val fetchSIdStatus: FetchSIdStatus,
     private val verifyWalletPairing: VerifyWalletPairing,
-    private val abortSIdProcess: AbortSIdProcess,
     private val navManager: NavigationManager,
     private val setStartAutoVerificationResult: SetStartAutoVerificationResult,
     @Assisted private val caseId: String,
@@ -113,12 +111,7 @@ internal class EIdStartAutoVerificationViewModel @AssistedInject constructor(
             }
     }
 
-    private fun onSecurityErrorClose() {
-        viewModelScope.launch {
-            abortSIdProcess(caseId)
-            navManager.navigateBackToHomeScreen(popUntil = Destination.EIdIntroScreen::class)
-        }
-    }
+    private fun onSecurityErrorClose() = navManager.navigateBackToHomeScreen(popUntil = Destination.EIdIntroScreen::class)
 
     private fun onStart() {
         if (isLoading.value) {

@@ -11,6 +11,7 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.Credential
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toCreateCredentialRequestError
 import ch.admin.foitt.openid4vc.domain.model.jwe.CreateJWEError
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
+import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.EncryptionAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryption
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionKeyPair
 import ch.admin.foitt.openid4vc.domain.usecase.CreateCredentialRequest
@@ -79,9 +80,17 @@ internal class CreateCredentialRequestImpl @Inject constructor(
                 CredentialOfferError.Unexpected(IllegalStateException("Public key algorithm is null"))
             ).bind<String>()
 
+        val encryptionMethod = EncryptionAlgorithm.entries.firstOrNull { encryptionAlgorithm ->
+            encryptionAlgorithm.name in requestEncryption.encValuesSupported
+        } ?: return@coroutineBinding Err(
+            CredentialOfferError.Unexpected(
+                IllegalStateException("No supported enc value in ${requestEncryption.encValuesSupported}")
+            )
+        ).bind<String>()
+
         val jweString = createJWE(
             algorithm = algorithm,
-            encryptionMethod = requestEncryption.encValuesSupported.first(),
+            encryptionMethod = encryptionMethod.name,
             compressionAlgorithm = requestEncryption.zipValuesSupported?.firstOrNull(),
             payload = credentialRequestJsonString,
             encryptionKey = requestEncryption.jwks.keys.first(), // use issuer public key to encrypt

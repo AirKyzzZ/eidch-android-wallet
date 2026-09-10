@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.feature.qr.presentation.qrscan
 import android.content.Context
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.viewModelScope
+import ch.admin.foitt.wallet.BuildConfig
 import ch.admin.foitt.wallet.feature.qr.domain.model.qrscan.FlashLightState
 import ch.admin.foitt.wallet.feature.qr.infra.qrscan.QrScanner
 import ch.admin.foitt.wallet.platform.appSetupState.domain.usecase.GetFirstCredentialWasAdded
@@ -13,7 +14,6 @@ import ch.admin.foitt.wallet.platform.invitation.domain.model.toErrorDestination
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.HandleInvitationProcessingSuccess
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ProcessInvitation
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
-import ch.admin.foitt.wallet.platform.permission.domain.model.BluetoothState
 import ch.admin.foitt.wallet.platform.permission.domain.model.CameraState
 import ch.admin.foitt.wallet.platform.permission.presentation.bluetooth.BluetoothPermissionViewModel
 import ch.admin.foitt.wallet.platform.proximity.domain.usecase.GetProximityRepositoryForScope
@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.net.URI
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -58,16 +59,20 @@ class QrScannerViewModel @Inject constructor(
     private val cameraStateMutable = MutableStateFlow(
         CameraState(isPermissionGranted = hasCameraPermission(appContext))
     )
-    private val cameraState = cameraStateMutable.asStateFlow()
 
-    val isCameraRunning = combine(bluetoothState, cameraState) { bluetooth: BluetoothState, camera: CameraState ->
-        (isProximityEngagementEnabled.not() || bluetooth.isReady()) && camera.isPermissionGranted
+    private val isBluetoothPermissionRequiredMutable = MutableStateFlow(false)
+    val isBluetoothPermissionRequired = isBluetoothPermissionRequiredMutable.asStateFlow()
+
+    val isCameraRunning = combine(cameraStateMutable, isBluetoothPermissionRequiredMutable) { cameraState, isBloothPermissionRequired ->
+        cameraState.isPermissionGranted && isBloothPermissionRequired.not()
     }.toStateFlow(false)
 
+    private var pendingProximityInvitationUri: String? = null
+
     override val topBarState
-        get() = when (isCameraRunning.value) {
-            true -> TopBarState.None
-            false -> TopBarState.Details(onUp = ::onUp, titleId = null)
+        get() = when {
+            isCameraRunning.value -> TopBarState.None
+            else -> TopBarState.Details(onUp = ::onUp, titleId = null)
         }
 
     val flashLightState = qrScanner.flashLightState
@@ -88,6 +93,8 @@ class QrScannerViewModel @Inject constructor(
 
     fun reset() {
         job?.cancel()
+        pendingProximityInvitationUri = null
+        isBluetoothPermissionRequiredMutable.value = false
         proximityRepository.reset()
         viewModelScope.launch {
             if (flashLightState.value == FlashLightState.ON) {
@@ -109,6 +116,15 @@ class QrScannerViewModel @Inject constructor(
             return
         }
 
+        val invitationUri = barcodesContent.firstOrNull() ?: ""
+
+        if (isProximityEngagementEnabled && isProximityScheme(invitationUri) && !bluetoothState.value.isReady()) {
+            qrScanner.pauseScanner()
+            pendingProximityInvitationUri = invitationUri
+            isBluetoothPermissionRequiredMutable.value = true
+            return
+        }
+
         viewModelScope.launch {
             _hapticEvent.emit(QrScannerEvent.ScanSuccess)
         }
@@ -116,7 +132,6 @@ class QrScannerViewModel @Inject constructor(
         qrScanner.pauseScanner()
         _infoState.update { QrInfoState.Loading }
         job = viewModelScope.launch {
-            val invitationUri = barcodesContent.firstOrNull() ?: ""
             processInvitation(invitationUri = invitationUri)
                 .onOk { invitation ->
                     job?.ensureActive()
@@ -133,6 +148,14 @@ class QrScannerViewModel @Inject constructor(
                     _infoState.update { QrInfoState.Empty }
                 }
             }
+        }
+    }
+
+    private fun isProximityScheme(uri: String): Boolean {
+        return try {
+            URI(uri).scheme == BuildConfig.SCHEME_PRESENTATION_REQUEST_PROXIMITY
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -154,6 +177,7 @@ class QrScannerViewModel @Inject constructor(
     private fun handleProximityError(failureResult: ProcessInvitationError) = when (failureResult) {
         is InvitationError.NoCompatibleCredential,
         is InvitationError.EmptyWallet -> navigateToInvitationFailureError(failureResult, null, null)
+
         else -> proximityRepository.decline()
     }
 
@@ -169,6 +193,7 @@ class QrScannerViewModel @Inject constructor(
             failureResult.responseUri,
             failureResult.state
         )
+
         is InvitationError.InvalidClientPresentation -> navigateToInvitationFailureError(
             failureResult,
             failureResult.responseUri,
@@ -181,6 +206,7 @@ class QrScannerViewModel @Inject constructor(
             failureResult.responseUri,
             failureResult.state
         )
+
         InvitationError.CredentialRequestDenied,
         InvitationError.InsufficientScope,
         InvitationError.InvalidClient,
@@ -198,11 +224,13 @@ class QrScannerViewModel @Inject constructor(
 
         InvitationError.UnverifiedIssuer,
         InvitationError.UnauthorizedIssuance -> navigateToInvitationFailureError(failureResult, null, null)
+
         is InvitationError.UnverifiedVerifier -> navigateToInvitationFailureError(
             failureResult,
             failureResult.responseUri,
             failureResult.state
         )
+
         is InvitationError.UnknownRegistry -> navigateToInvitationFailureError(
             failureResult,
             failureResult.responseUri,
@@ -291,6 +319,7 @@ class QrScannerViewModel @Inject constructor(
     }
 
     init {
+        updateBluetoothState(appContext)
         viewModelScope.launch {
             isCameraRunning.collect { isReady ->
                 if (isReady) {
@@ -300,6 +329,44 @@ class QrScannerViewModel @Inject constructor(
         }
         viewModelScope.launch {
             initQrInfoHint()
+        }
+        viewModelScope.launch {
+            bluetoothState.collect { state ->
+                if (state.isReady() && isBluetoothPermissionRequired.value && pendingProximityInvitationUri != null) {
+                    val uri = pendingProximityInvitationUri!!
+                    pendingProximityInvitationUri = null
+                    isBluetoothPermissionRequiredMutable.value = false
+                    retryProximityInvitation(uri)
+                }
+            }
+        }
+    }
+
+    private fun retryProximityInvitation(invitationUri: String) {
+        if (job?.isActive == true) {
+            return
+        }
+        viewModelScope.launch {
+            _hapticEvent.emit(QrScannerEvent.ScanSuccess)
+        }
+        _infoState.update { QrInfoState.Loading }
+        job = viewModelScope.launch {
+            processInvitation(invitationUri = invitationUri)
+                .onOk { invitation ->
+                    job?.ensureActive()
+                    handleInvitationProcessingSuccess(invitation).navigate()
+                }
+                .onErr { invitationError ->
+                    job?.ensureActive()
+                    handleProcessingFailure(invitationError)
+                }
+        }.apply {
+            invokeOnCompletion {
+                this@QrScannerViewModel.job = null
+                if (infoState.value is QrInfoState.Loading) {
+                    _infoState.update { QrInfoState.Empty }
+                }
+            }
         }
     }
 

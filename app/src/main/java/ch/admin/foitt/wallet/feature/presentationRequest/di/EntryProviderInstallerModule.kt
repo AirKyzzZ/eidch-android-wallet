@@ -52,7 +52,8 @@ object EntryProviderInstallerModule {
             val viewModel = hiltViewModel<PresentationDeclinedViewModel, PresentationDeclinedViewModel.Factory>(
                 creationCallback = { factory ->
                     factory.create(
-                        redirectUri = navKey.redirectUri
+                        redirectUri = navKey.redirectUri,
+                        credentialId = navKey.credentialId
                     )
                 }
             )

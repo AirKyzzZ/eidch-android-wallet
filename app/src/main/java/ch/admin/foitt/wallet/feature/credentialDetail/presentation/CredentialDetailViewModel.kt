@@ -17,11 +17,9 @@ import ch.admin.foitt.wallet.platform.activityList.presentation.model.toActivity
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorMetadataDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
-import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromUri
+import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCredentialStatus
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialEvent
@@ -72,7 +70,7 @@ class CredentialDetailViewModel @AssistedInject constructor(
     private val getCredentialCardState: GetCredentialCardState,
     private val getCredentialIssuanceType: GetCredentialIssuanceType,
     private val updateCredentialStatus: UpdateCredentialStatus,
-    private val getDrawableFromUri: GetDrawableFromUri,
+    private val getDrawableFromImageData: GetDrawableFromImageData,
     private val navManager: NavigationManager,
     private val deleteCredential: DeleteCredential,
     private val credentialEventRepository: CredentialEventRepository,
@@ -140,11 +138,12 @@ class CredentialDetailViewModel @AssistedInject constructor(
                     _isLoading.value = false
                     val activities = activitiesResult.get() ?: emptyList()
                     allActivities.value = activities
-                    val issuerDisplay = issuerDisplayResult.get()
+                    val display = issuerDisplayResult.get()
+                    issuerDisplay.value = display
 
                     mapToUiState(
                         credentialDetail = detailsResult.get(),
-                        issuerDisplay = issuerDisplay,
+                        issuerDisplay = display,
                         areActivitiesEnabled = areActivitiesEnabled,
                         activities = activities,
                         issuanceType = issuanceType,
@@ -255,7 +254,7 @@ class CredentialDetailViewModel @AssistedInject constructor(
                     actorDisplayData = ActorMetadataDisplayData(
                         activityId = activityId,
                         localizedActorName = issuerDisplay.value?.name ?: "",
-                        actorImageData = issuerDisplay.value?.image?.toByteArray()
+                        actorImageData = issuerDisplay.value?.image
                     ),
                     rawData = null,
                     issuerDid = null,
@@ -279,14 +278,8 @@ class CredentialDetailViewModel @AssistedInject constructor(
 
     private suspend fun IssuerDisplay?.toActorUiState() = this?.let {
         ActorUiState(
-            name = if (locale == DisplayLanguage.FALLBACK) {
-                null
-            } else if (name == DisplayConst.ISSUER_FALLBACK_NAME) {
-                null
-            } else {
-                name
-            },
-            painter = getDrawableFromUri(image)?.toPainter(),
+            name = name,
+            painter = getDrawableFromImageData(image)?.toPainter(),
             trustStatus = TrustStatus.UNKNOWN,
             vcSchemaTrustStatus = VcSchemaTrustStatus.UNPROTECTED,
             actorType = ActorType.ISSUER,

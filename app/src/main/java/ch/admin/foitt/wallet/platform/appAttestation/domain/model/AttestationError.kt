@@ -29,6 +29,7 @@ interface AttestationError {
     data class ValidationError(val message: String?) :
         RequestClientAttestationError,
         ValidateClientAttestationError,
+        AppAttestationRepositoryError,
         RequestKeyAttestationError,
         ValidateKeyAttestationError
 
@@ -115,6 +116,7 @@ internal fun ValidateClientAttestationError.toRequestClientAttestationError(): R
 internal fun AppAttestationRepositoryError.toRequestClientAttestationError(): RequestClientAttestationError = when (this) {
     is SocketTimeoutError -> this
     is NetworkError -> this
+    is ValidationError -> this
     is Unexpected -> this
 }
 
@@ -145,6 +147,7 @@ internal fun ValidateKeyAttestationError.toRequestKeyAttestationError(): Request
 internal fun AppAttestationRepositoryError.toRequestKeyAttestationError(): RequestKeyAttestationError = when (this) {
     is SocketTimeoutError -> this
     is NetworkError -> this
+    is ValidationError -> this
     is Unexpected -> this
 }
 

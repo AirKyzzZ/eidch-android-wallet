@@ -19,6 +19,7 @@ import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredent
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialComparator
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateAllCredentialStatuses
+import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCachedImages
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayData
@@ -52,6 +53,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.time.Instant
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -65,6 +67,7 @@ class HomeViewModel @Inject constructor(
     private val getCredentialCardState: GetCredentialCardState,
     private val hasExhaustedBatchCopies: HasExhaustedBatchCopies,
     private val updateAllCredentialStatuses: UpdateAllCredentialStatuses,
+    private val updateCachedImages: UpdateCachedImages,
     private val updateAllSIdStatuses: UpdateAllSIdStatuses,
     private val refreshDeferredCredentials: RefreshDeferredCredentials,
     private val refreshBatchCredentials: RefreshBatchCredentials,
@@ -89,6 +92,10 @@ class HomeViewModel @Inject constructor(
     private var pollingJob: Job? = null
 
     private var statusRefreshJob: Job? = null
+
+    private var cachedImagesRefreshJob: Job? = null
+
+    private var lastCachedImagesRefresh: Long = 0L // epoch seconds
 
     @OptIn(UnsafeResultValueAccess::class)
     val screenContentState = refreshableStateFlow(initialData = HomeScreenState.Initial) {
@@ -230,6 +237,7 @@ class HomeViewModel @Inject constructor(
             tryLaunchEidPolling()
         }
         tryRefreshCredentialStatuses()
+        tryRefreshCachedImages()
     }
 
     fun onPause() {
@@ -260,6 +268,25 @@ class HomeViewModel @Inject constructor(
         }.apply {
             invokeOnCompletion {
                 if (statusRefreshJob == this) statusRefreshJob = null
+            }
+        }
+    }
+
+    /**
+     * Backfills the cached display images.
+     * The cooldown keeps credentials whose metadata has no fetchable
+     * logo from re-parsing their raw metadata on every resume.
+     */
+    private fun tryRefreshCachedImages() {
+        if (cachedImagesRefreshJob != null) return
+        val now = Instant.now().epochSecond
+        if (now - lastCachedImagesRefresh < CACHED_IMAGES_REFRESH_COOLDOWN_SECONDS) return
+        lastCachedImagesRefresh = now
+        cachedImagesRefreshJob = viewModelScope.launch {
+            updateCachedImages()
+        }.apply {
+            invokeOnCompletion {
+                if (cachedImagesRefreshJob == this) cachedImagesRefreshJob = null
             }
         }
     }
@@ -365,10 +392,11 @@ class HomeViewModel @Inject constructor(
     fun onHelp() {
         // hide menu on navigation, so when coming back it is closed
         onMenu(false)
-        appContext.openLink(R.string.tk_settings_general_help_link_value)
+        appContext.openLink(R.string.settings_help_contact_linkValue)
     }
 
     companion object {
         private const val TOAST_DISPLAY_TIME_MILLIS = 4000L
+        private const val CACHED_IMAGES_REFRESH_COOLDOWN_SECONDS = 5 * 60L
     }
 }

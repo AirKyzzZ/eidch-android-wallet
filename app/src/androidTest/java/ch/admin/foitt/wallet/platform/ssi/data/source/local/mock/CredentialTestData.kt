@@ -10,7 +10,9 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClust
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialKeyBindingEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
@@ -156,20 +158,40 @@ object CredentialTestData {
     )
 
     val credentialDisplay1 = CredentialDisplay(
-        id = 1,
-        credentialId = credential1.id,
-        locale = "xx_XX",
-        name = CORRECT
+        entity = CredentialDisplayEntity(
+            id = 1,
+            credentialId = credential1.id,
+            locale = "xx_XX",
+            name = CORRECT
+        ),
+        logo = null
     )
     val credentialDisplay2 = CredentialDisplay(
-        id = 2,
-        credentialId = credential2.id,
-        locale = DisplayLanguage.FALLBACK,
-        name = FALLBACK
+        entity = CredentialDisplayEntity(
+            id = 2,
+            credentialId = credential2.id,
+            locale = DisplayLanguage.FALLBACK,
+            name = FALLBACK
+        ),
+        logo = null
     )
 
-    val credentialIssuerDisplay1 =
-        CredentialIssuerDisplay(id = 1, credentialId = credential1.id, name = NAME1, locale = "xx")
-    val credentialIssuerDisplay2 =
-        CredentialIssuerDisplay(id = 2, credentialId = credential2.id, name = NAME2, locale = "xx_XX")
+    val credentialIssuerDisplay1 = CredentialIssuerDisplay(
+        entity = CredentialIssuerDisplayEntity(
+            id = 1,
+            credentialId = credential1.id,
+            name = NAME1,
+            locale = "xx"
+        ),
+        image = null
+    )
+    val credentialIssuerDisplay2 = CredentialIssuerDisplay(
+        entity = CredentialIssuerDisplayEntity(
+            id = 2,
+            credentialId = credential2.id,
+            name = NAME2,
+            locale = "xx_XX"
+        ),
+        image = null
+    )
 }

@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.implementati
 import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorMetadataDisplayData
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetLocalizedActorImageData
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedDisplay
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.GetNonComplianceReportingDataError
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceError
@@ -11,7 +12,6 @@ import ch.admin.foitt.wallet.platform.nonCompliance.domain.usecase.GetNonComplia
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.RawCredentialDataRepository
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.VerifiableCredentialRepository
 import ch.admin.foitt.wallet.platform.utils.decompress
-import ch.admin.foitt.wallet.platform.utils.domain.usecase.GetImageDataFromUri
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
@@ -20,8 +20,8 @@ import javax.inject.Inject
 class GetNonComplianceReportingDataImpl @Inject constructor(
     private val rawCredentialDataRepository: RawCredentialDataRepository,
     private val verifiableCredentialRepository: VerifiableCredentialRepository,
-    private val getImageDataFromUri: GetImageDataFromUri,
     private val getLocalizedDisplay: GetLocalizedDisplay,
+    private val getLocalizedActorImageData: GetLocalizedActorImageData,
 ) : GetNonComplianceReportingData {
     override suspend fun invoke(
         credentialId: Long,
@@ -43,12 +43,7 @@ class GetNonComplianceReportingDataImpl @Inject constructor(
             actorDisplayData.preferredLanguage
         )?.value ?: ""
 
-        val iconUri = getLocalizedDisplay(
-            actorDisplayData.image ?: emptyList(),
-            actorDisplayData.preferredLanguage
-        )?.value
-
-        val iconBytes = iconUri?.let { getImageDataFromUri(it) }
+        val iconBytes = getLocalizedActorImageData(actorDisplayData)
 
         NonComplianceReportingData(
             actorDisplayData = ActorMetadataDisplayData(

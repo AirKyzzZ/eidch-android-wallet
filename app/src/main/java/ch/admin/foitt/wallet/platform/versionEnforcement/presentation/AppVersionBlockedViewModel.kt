@@ -24,7 +24,7 @@ class AppVersionBlockedViewModel @AssistedInject constructor(
     setTopBarState: SetTopBarState,
     @Assisted("title") val initialTitle: String?,
     @Assisted("text") val initialText: String?,
-    @Assisted("playStoreUrl") val playStoreUrl: String?,
+    @Assisted("playStoreUrl") val playStoreUrl: String,
     @Assisted("enforcedType") val enforcedType: EnforcementType
 ) : ScreenViewModel(setTopBarState) {
     override val topBarState = TopBarState.None
@@ -46,17 +46,13 @@ class AppVersionBlockedViewModel @AssistedInject constructor(
         fun create(
             @Assisted("title") title: String?,
             @Assisted("text") text: String?,
-            @Assisted("playStoreUrl") playStoreUrl: String?,
+            @Assisted("playStoreUrl") playStoreUrl: String,
             @Assisted("enforcedType") enforcedType: EnforcementType
         ): AppVersionBlockedViewModel
     }
 
     fun goToPlayStore() {
-        if (playStoreUrl != null) {
-            appContext.openLink(playStoreUrl)
-        } else {
-            appContext.openLink(R.string.version_enforcement_store_link)
-        }
+        appContext.openLink(playStoreUrl)
     }
 
     fun onSupport() {

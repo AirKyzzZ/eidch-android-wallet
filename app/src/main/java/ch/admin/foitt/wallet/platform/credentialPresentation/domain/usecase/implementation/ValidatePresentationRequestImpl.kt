@@ -207,10 +207,10 @@ class ValidatePresentationRequestImpl @Inject constructor(
             it.claims?.isEmpty() == true
     } ?: false
 
-    // State field must be provided if no holder binding is requested
+    // State field must be provided if no holder binding is requested (field is optional and defaults to true)
     // see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.3
     private fun DcqlQuery.requestsOnlyHolderBinding() = credentials?.all {
-        it.requireCryptographicHolderBinding == true
+        it.requireCryptographicHolderBinding != false
     } ?: false
 
     private fun ClientIdentifier.hasSameClientId(
@@ -222,7 +222,8 @@ class ValidatePresentationRequestImpl @Inject constructor(
         const val VP_TOKEN = "vp_token"
         const val DIRECT_POST_JWT = "direct_post.jwt"
         const val DC_API_JWT = "dc_api.jwt"
-        val SUPPORTED_RESPONSE_MODES = listOf(DIRECT_POST_JWT, DC_API_JWT)
+        const val DC_API = "dc_api"
+        val SUPPORTED_RESPONSE_MODES = listOf(DIRECT_POST_JWT, DC_API_JWT, DC_API)
         const val CLAIM_AUDIENCE = "aud"
     }
 }

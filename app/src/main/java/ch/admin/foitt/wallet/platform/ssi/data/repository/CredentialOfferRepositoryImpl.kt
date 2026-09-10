@@ -3,6 +3,7 @@ package ch.admin.foitt.wallet.platform.ssi.data.repository
 import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialFormat
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.KeyBinding
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyClaimDisplay
 import ch.admin.foitt.wallet.platform.credential.domain.model.AnyCredentialDisplay
@@ -21,6 +22,7 @@ import ch.admin.foitt.wallet.platform.database.data.dao.CredentialKeyBindingEnti
 import ch.admin.foitt.wallet.platform.database.data.dao.DaoProvider
 import ch.admin.foitt.wallet.platform.database.data.dao.DeferredCredentialDao
 import ch.admin.foitt.wallet.platform.database.data.dao.DpopBindingDao
+import ch.admin.foitt.wallet.platform.database.data.dao.ImageEntityDao
 import ch.admin.foitt.wallet.platform.database.data.dao.RawCredentialDataDao
 import ch.admin.foitt.wallet.platform.database.data.dao.VerifiableCredentialDao
 import ch.admin.foitt.wallet.platform.database.domain.model.BundleItemEntity
@@ -31,13 +33,15 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialAuthentica
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialKeyBindingEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.database.domain.model.DpopBindingEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.ImageEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.RawCredentialData
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
@@ -46,27 +50,42 @@ import ch.admin.foitt.wallet.platform.database.domain.model.toCredentialClaimClu
 import ch.admin.foitt.wallet.platform.database.domain.usecase.RunInTransaction
 import ch.admin.foitt.wallet.platform.di.IoDispatcher
 import ch.admin.foitt.wallet.platform.keybindingMatching.domain.usecase.MatchKeyBindingToPayloadCnf
+import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedCredentialInformationDisplay
+import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
+import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundlerError
+import ch.admin.foitt.wallet.platform.oca.domain.usecase.OcaBundler
 import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialOfferRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.model.toCredentialOfferRepositoryError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialOfferRepository
+import ch.admin.foitt.wallet.platform.utils.SafeJson
+import ch.admin.foitt.wallet.platform.utils.decompress
+import ch.admin.foitt.wallet.platform.utils.domain.usecase.GetImageDataFromUri
 import ch.admin.foitt.wallet.platform.utils.suspendUntilNonNull
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
+import com.github.michaelbull.result.getOrElse
 import com.github.michaelbull.result.getOrThrow
 import com.github.michaelbull.result.mapError
+import com.github.michaelbull.result.onErr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.net.URL
+import java.security.MessageDigest
 import java.time.Instant
 import javax.inject.Inject
 
 class CredentialOfferRepositoryImpl @Inject constructor(
     daoProvider: DaoProvider,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val getLocalizedCredentialInformationDisplay: GetLocalizedCredentialInformationDisplay,
     private val runInTransaction: RunInTransaction,
     private val matchKeyBindingToPayloadCnf: MatchKeyBindingToPayloadCnf,
+    private val getImageDataFromUri: GetImageDataFromUri,
+    private val safeJson: SafeJson,
+    private val ocaBundler: OcaBundler,
 ) : CredentialOfferRepository {
 
     override suspend fun saveCredentialOffer(
@@ -216,14 +235,18 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         rawMetadata: ByteArray
     ): Result<Unit, CredentialOfferRepositoryError> = withContext(ioDispatcher) {
         runSuspendCatching {
+            val uriToImageData = prefetchImages(issuerDisplays, credentialDisplays)
+
             runInTransaction {
+                val uriToHash = insertImagesAndGetHashes(uriToImageData)
+
                 credentialIssuerDisplayDao().deleteByCredentialId(credentialId)
-                val issuerDisplays = createCredentialIssuerDisplays(issuerDisplays, credentialId)
-                credentialIssuerDisplayDao().insertAll(issuerDisplays)
+                val issuerDisplayEntities = createCredentialIssuerDisplays(issuerDisplays, credentialId, uriToHash)
+                credentialIssuerDisplayDao().insertAll(issuerDisplayEntities)
 
                 credentialDisplayDao().deleteByCredentialId(credentialId)
-                val credDisplays = createCredentialDisplays(credentialDisplays, credentialId)
-                credentialDisplayDao().insertAll(credDisplays)
+                val credDisplayEntities = createCredentialDisplays(credentialDisplays, credentialId, uriToHash)
+                credentialDisplayDao().insertAll(credDisplayEntities)
 
                 rawCredentialDataDao().updateMetadataByCredentialId(credentialId, rawMetadata)
                 Unit
@@ -245,14 +268,18 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         rawCredentialData: RawCredentialData,
     ): Result<Long, CredentialOfferRepositoryError> = withContext(ioDispatcher) {
         runSuspendCatching {
+            val uriToImageData = prefetchImages(issuerDisplays, credentialDisplays)
+
             runInTransaction {
+                val uriToHash = insertImagesAndGetHashes(uriToImageData)
+
                 credentialIssuerDisplayDao().deleteByCredentialId(credentialId)
-                val issuerDisplays = createCredentialIssuerDisplays(issuerDisplays, credentialId)
-                credentialIssuerDisplayDao().insertAll(issuerDisplays)
+                val issuerDisplayEntities = createCredentialIssuerDisplays(issuerDisplays, credentialId, uriToHash)
+                credentialIssuerDisplayDao().insertAll(issuerDisplayEntities)
 
                 credentialDisplayDao().deleteByCredentialId(credentialId)
-                val credDisplays = createCredentialDisplays(credentialDisplays, credentialId)
-                credentialDisplayDao().insertAll(credDisplays)
+                val credDisplayEntities = createCredentialDisplays(credentialDisplays, credentialId, uriToHash)
+                credentialDisplayDao().insertAll(credDisplayEntities)
 
                 rawCredentialDataDao().deleteByCredentialId(credentialId)
                 rawCredentialDataDao().insert(rawCredentialData = rawCredentialData)
@@ -304,6 +331,116 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun refreshCachedImages(credentialId: Long): Result<Unit, Throwable> = withContext(ioDispatcher) {
+        runSuspendCatching {
+            val issuerDisplaysInDb = credentialIssuerDisplayDao().getCredentialIssuerDisplaysById(credentialId)
+            val credDisplaysInDb = credentialDisplayDao().getByCredentialId(credentialId)
+
+            val isAnythingMissing = issuerDisplaysInDb.any { it.image == null && it.locale != DisplayLanguage.FALLBACK } ||
+                credDisplaysInDb.any { it.logo == null && it.locale != DisplayLanguage.FALLBACK }
+            if (!isAnythingMissing) return@runSuspendCatching
+
+            val rawData = rawCredentialDataDao().getRawCredentialDataByCredentialId(credentialId).firstOrNull()
+                ?: error("No raw data found for credential $credentialId")
+            val issuerInfo = parseIssuerInfo(rawData) ?: error("Failed to parse issuer info")
+
+            val missingIssuerImages = getMissingIssuerImages(issuerDisplaysInDb, issuerInfo)
+            // Mirrors the save path: a bundle that cannot be read falls back to the metadata
+            // displays, so the metadata logos are the correct source for them here too.
+            val ocaBundle = parseOcaBundle(rawData).getOrElse { error ->
+                Timber.w("OCA bundle unreadable for credential $credentialId, using metadata images: $error")
+                null
+            }
+            val missingCredImages = getMissingCredentialImages(credentialId, credDisplaysInDb, issuerInfo, ocaBundle)
+
+            if (missingIssuerImages.isEmpty() && missingCredImages.isEmpty()) return@runSuspendCatching
+
+            val allUris = (missingIssuerImages.map { it.second } + missingCredImages.map { it.second }).distinct()
+            val uriToImageData = allUris.mapNotNull { uri ->
+                getImageDataFromUri(uri)?.let { uri to it }
+            }.toMap()
+
+            updateDisplayHashes(uriToImageData, missingIssuerImages, missingCredImages)
+        }
+    }
+
+    private fun getMissingIssuerImages(
+        issuerDisplaysInDb: List<CredentialIssuerDisplay>,
+        issuerInfo: IssuerCredentialInfo
+    ): List<Pair<Long, String>> {
+        return issuerDisplaysInDb
+            .filter { it.image == null && it.locale != DisplayLanguage.FALLBACK }
+            .mapNotNull { display ->
+                val uri = getLocalizedCredentialInformationDisplay(
+                    displays = issuerInfo.display ?: emptyList(),
+                    preferredLocaleString = display.locale
+                )?.logo?.uri
+                if (uri != null) display.entity.id to uri else null
+            }
+    }
+
+    private suspend fun getMissingCredentialImages(
+        credentialId: Long,
+        credDisplaysInDb: List<CredentialDisplay>,
+        issuerInfo: IssuerCredentialInfo,
+        ocaBundle: OcaBundle?
+    ): List<Pair<Long, String>> {
+        val credentialInDb = credentialDao().getById(credentialId)
+        val config = issuerInfo.credentialConfigurations.find { it.identifier == credentialInDb.selectedConfigurationId }
+            ?: issuerInfo.credentialConfigurations.find { it.format == credentialInDb.format }
+            ?: issuerInfo.credentialConfigurations.firstOrNull()
+
+        return credDisplaysInDb.filter { it.logo == null && it.locale != DisplayLanguage.FALLBACK }.mapNotNull { display ->
+            val uri = if (ocaBundle != null) {
+                ocaBundle.ocaCredentialData.firstOrNull {
+                    it.locale == display.locale && it.theme == display.entity.theme
+                }?.logoData
+            } else {
+                config?.credentialMetadata?.display?.find { it.locale == display.locale }?.logo?.uri
+            }
+
+            if (uri != null) display.entity.id to uri else null
+        }
+    }
+
+    private suspend fun updateDisplayHashes(
+        uriToImageData: Map<String, ByteArray>,
+        missingIssuerImages: List<Pair<Long, String>>,
+        missingCredImages: List<Pair<Long, String>>
+    ) {
+        runInTransaction {
+            val uriToHash = insertImagesAndGetHashes(uriToImageData)
+
+            missingIssuerImages.forEach { (dbId, uri) ->
+                uriToHash[uri]?.let { hash ->
+                    credentialIssuerDisplayDao().updateImageHash(dbId, hash)
+                }
+            }
+
+            missingCredImages.forEach { (dbId, uri) ->
+                uriToHash[uri]?.let { hash ->
+                    credentialDisplayDao().updateLogoHash(dbId, hash)
+                }
+            }
+        }
+    }
+
+    private fun parseIssuerInfo(rawData: RawCredentialData): IssuerCredentialInfo? {
+        val rawIssuerCredentialInfo = rawData.rawOIDMetadata?.decompress()?.decodeToString()
+            ?: return null
+
+        return safeJson.safeDecodeStringTo<IssuerCredentialInfo>(rawIssuerCredentialInfo).onErr {
+            Timber.w("Failed to parse issuer info from raw credential data")
+        }.getOrElse { null }
+    }
+
+    private suspend fun parseOcaBundle(rawData: RawCredentialData): Result<OcaBundle?, OcaBundlerError> {
+        val rawOcaBundle = rawData.rawOcaBundle?.decompress()?.decodeToString()
+            ?: return Ok(null) // No bundle: the credential displays legitimately come from metadata
+
+        return ocaBundler(rawOcaBundle)
+    }
+
     private suspend fun saveCredentialOfferTransaction(
         credentialId: Long = 0L,
         format: CredentialFormat,
@@ -315,7 +452,11 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         additionalTask: suspend (credentialId: Long) -> Unit,
     ): Result<Long, Throwable> = withContext(ioDispatcher) {
         runSuspendCatching {
+            val uriToImageData = prefetchImages(issuerDisplays, credentialDisplays)
+
             runInTransaction {
+                val uriToHash = insertImagesAndGetHashes(uriToImageData)
+
                 val credentialId = if (credentialId == 0L) {
                     credentialDao().insert(
                         Credential(
@@ -337,12 +478,12 @@ class CredentialOfferRepositoryImpl @Inject constructor(
                 }
 
                 credentialIssuerDisplayDao().deleteByCredentialId(credentialId)
-                val issuerDisplays = createCredentialIssuerDisplays(issuerDisplays, credentialId)
-                credentialIssuerDisplayDao().insertAll(issuerDisplays)
+                val issuerDisplayEntities = createCredentialIssuerDisplays(issuerDisplays, credentialId, uriToHash)
+                credentialIssuerDisplayDao().insertAll(issuerDisplayEntities)
 
                 credentialDisplayDao().deleteByCredentialId(credentialId)
-                val credDisplays = createCredentialDisplays(credentialDisplays, credentialId)
-                credentialDisplayDao().insertAll(credDisplays)
+                val credDisplayEntities = createCredentialDisplays(credentialDisplays, credentialId, uriToHash)
+                credentialDisplayDao().insertAll(credDisplayEntities)
 
                 rawCredentialDataDao().deleteByCredentialId(credentialId)
                 rawCredentialDataDao().insert(rawCredentialData = rawCredentialData.copy(credentialId = credentialId))
@@ -354,48 +495,41 @@ class CredentialOfferRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun createBundleItem(
-        credentialId: Long,
-        payload: String,
-        status: CredentialStatus = CredentialStatus.UNKNOWN,
-    ) = BundleItemEntity(
-        credentialId = credentialId,
-        payload = payload,
-        status = status,
-    )
-
-    private fun createCredentialKeyBinding(
-        credentialId: Long,
-        keyBinding: KeyBinding?,
-        bundleItemId: Long? = null
-    ) = keyBinding?.let {
-        CredentialKeyBindingEntity(
-            id = it.identifier,
-            credentialId = credentialId,
-            bundleItemId = bundleItemId,
-            algorithm = it.algorithm.stdName,
-            bindingType = it.bindingType,
-            publicKey = it.publicKey,
-            privateKey = it.privateKey,
-        )
+    private suspend fun prefetchImages(
+        issuerDisplays: List<AnyIssuerDisplay>,
+        credentialDisplays: List<AnyCredentialDisplay>,
+    ): Map<String, ByteArray> {
+        val allUris = (issuerDisplays.mapNotNull { it.logo } + credentialDisplays.mapNotNull { it.logo }).distinct()
+        return allUris.mapNotNull { uri ->
+            getImageDataFromUri(uri)?.let { uri to it }
+        }.toMap()
     }
 
-    private fun CredentialKeyBindingEntity.toKeyBinding(): KeyBinding = KeyBinding(
-        identifier = id,
-        algorithm = SigningAlgorithm.valueOf(algorithm),
-        bindingType = bindingType,
-        publicKey = publicKey,
-        privateKey = privateKey
-    )
+    private suspend fun insertImagesAndGetHashes(
+        uriToImageData: Map<String, ByteArray>,
+    ): Map<String, String> {
+        val uriToHash = mutableMapOf<String, String>()
+        val newImageEntities = mutableListOf<ImageEntity>()
+
+        uriToImageData.forEach { (uri, imageData) ->
+            val hash = MessageDigest.getInstance("SHA-256").digest(imageData).toHexString()
+            uriToHash[uri] = hash
+            newImageEntities.add(ImageEntity(hash = hash, image = imageData))
+        }
+
+        imageDao().insertAll(newImageEntities)
+        return uriToHash
+    }
 
     private fun createCredentialIssuerDisplays(
         issuerDisplays: List<AnyIssuerDisplay>,
         credentialId: Long,
+        uriToHash: Map<String, String>,
     ) = issuerDisplays.map { display ->
-        CredentialIssuerDisplay(
+        CredentialIssuerDisplayEntity(
             credentialId = credentialId,
-            name = display.name ?: DisplayConst.ISSUER_FALLBACK_NAME,
-            image = display.logo,
+            name = display.name,
+            imageHash = uriToHash[display.logo],
             imageAltText = display.logoAltText,
             locale = display.locale ?: DisplayLanguage.UNKNOWN,
         )
@@ -404,13 +538,14 @@ class CredentialOfferRepositoryImpl @Inject constructor(
     private fun createCredentialDisplays(
         credentialDisplays: List<AnyCredentialDisplay>,
         credentialId: Long,
+        uriToHash: Map<String, String>,
     ) = credentialDisplays.map { display ->
-        CredentialDisplay(
+        CredentialDisplayEntity(
             credentialId = credentialId,
             locale = display.locale ?: DisplayLanguage.UNKNOWN,
             name = display.name,
             description = display.description,
-            logoUri = display.logo,
+            logoHash = uriToHash[display.logo],
             logoAltText = display.logoAltText,
             backgroundColor = display.backgroundColor,
             theme = display.theme
@@ -456,6 +591,40 @@ class CredentialOfferRepositoryImpl @Inject constructor(
             saveCluster(cluster = childCluster, credentialId = credentialId, parentClusterId = clusterId)
         }
     }
+
+    private fun createBundleItem(
+        credentialId: Long,
+        payload: String,
+        status: CredentialStatus = CredentialStatus.UNKNOWN,
+    ) = BundleItemEntity(
+        credentialId = credentialId,
+        payload = payload,
+        status = status,
+    )
+
+    private fun createCredentialKeyBinding(
+        credentialId: Long,
+        keyBinding: KeyBinding?,
+        bundleItemId: Long? = null
+    ) = keyBinding?.let {
+        CredentialKeyBindingEntity(
+            id = it.identifier,
+            credentialId = credentialId,
+            bundleItemId = bundleItemId,
+            algorithm = it.algorithm.stdName,
+            bindingType = it.bindingType,
+            publicKey = it.publicKey,
+            privateKey = it.privateKey,
+        )
+    }
+
+    private fun CredentialKeyBindingEntity.toKeyBinding(): KeyBinding = KeyBinding(
+        identifier = id,
+        algorithm = SigningAlgorithm.valueOf(algorithm),
+        bindingType = bindingType,
+        publicKey = publicKey,
+        privateKey = privateKey
+    )
 
     private val credentialDaoFlow = daoProvider.credentialDaoFlow
     private suspend fun credentialDao(): CredentialDao = suspendUntilNonNull { credentialDaoFlow.value }
@@ -523,4 +692,7 @@ class CredentialOfferRepositoryImpl @Inject constructor(
     private suspend fun credentialActivityEntityDao(): CredentialActivityEntityDao = suspendUntilNonNull {
         credentialActivityEntitiyDaoFlow.value
     }
+
+    private val imageEntityDaoFlow = daoProvider.imageEntityDao
+    private suspend fun imageDao(): ImageEntityDao = suspendUntilNonNull { imageEntityDaoFlow.value }
 }

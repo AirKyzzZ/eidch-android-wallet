@@ -10,7 +10,6 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdPeer
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdStartAutoVerificationType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.GuardianVerificationResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletError
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdChallengeResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRepositoryError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateResponse
@@ -43,11 +42,16 @@ interface SIdRepository {
         clientAttestation: ClientAttestation,
         clientAttestationPoP: ClientAttestationPoP,
     ): Result<Unit, SIdRepositoryError>
+
+    /**
+     * Returns the compact JWE from pair-wallet, encrypted to the client attestation key.
+     */
     suspend fun pairWallet(
         caseId: String,
         clientAttestation: ClientAttestation,
         clientAttestationPoP: ClientAttestationPoP
-    ): Result<PairWalletResponse, PairWalletError>
+    ): Result<String, PairWalletError>
+
     suspend fun startAutoVerification(
         caseId: String,
         autoVerificationType: EIdStartAutoVerificationType,

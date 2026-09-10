@@ -20,8 +20,9 @@ class CreateKeyGenSpecImpl @Inject constructor() : CreateKeyGenSpec {
         signingAlgorithm: SigningAlgorithm,
         useStrongBox: Boolean,
         attestationChallenge: ByteArray?,
+        purposes: Int,
     ): Result<KeyGenParameterSpec, CreateKeyGenSpecError> = runSuspendCatching {
-        KeyGenParameterSpec.Builder(keyId, KeyProperties.PURPOSE_SIGN)
+        KeyGenParameterSpec.Builder(keyId, purposes)
             .setAlgorithmParameterSpec(signingAlgorithm.toAlgorithmParameterSpec())
             .setDigests(signingAlgorithm.toDigest())
             .setIsStrongBoxBacked(useStrongBox)

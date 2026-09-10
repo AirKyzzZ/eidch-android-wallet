@@ -8,11 +8,9 @@ import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.V
 import ch.admin.foitt.wallet.feature.deferredDetail.presentation.model.DeferredDetailUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
-import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromUri
+import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
 import ch.admin.foitt.wallet.platform.credential.domain.model.DeferredCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialEvent
 import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialEventRepository
@@ -52,10 +50,10 @@ class DeferredDetailViewModel @AssistedInject constructor(
     getDeferredCredentialDetailFlow: GetDeferredCredentialWithDetailFlow,
     getCredentialIssuerDisplaysFlow: GetCredentialIssuerDisplaysFlow,
     private val getCredentialCardState: GetCredentialCardState,
-    private val getDrawableFromUri: GetDrawableFromUri,
     private val navManager: NavigationManager,
     private val deleteDeferred: DeleteDeferred,
     private val credentialEventRepository: CredentialEventRepository,
+    private val getDrawableFromImageData: GetDrawableFromImageData,
     setTopBarState: SetTopBarState,
     @Assisted private val credentialId: Long
 ) : ScreenViewModel(setTopBarState) {
@@ -181,14 +179,8 @@ class DeferredDetailViewModel @AssistedInject constructor(
 
     private suspend fun IssuerDisplay?.toActorUiState() = this?.let {
         ActorUiState(
-            name = if (locale == DisplayLanguage.FALLBACK) {
-                null
-            } else if (name == DisplayConst.ISSUER_FALLBACK_NAME) {
-                null
-            } else {
-                name
-            },
-            painter = getDrawableFromUri(image)?.toPainter(),
+            name = name,
+            painter = getDrawableFromImageData(image)?.toPainter(),
             trustStatus = TrustStatus.UNKNOWN,
             vcSchemaTrustStatus = VcSchemaTrustStatus.UNPROTECTED,
             actorType = ActorType.ISSUER,

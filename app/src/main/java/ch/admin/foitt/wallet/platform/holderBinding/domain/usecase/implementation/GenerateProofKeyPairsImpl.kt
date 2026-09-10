@@ -5,6 +5,7 @@ import ch.admin.foitt.openid4vc.domain.model.SigningAlgorithm
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.ProofTypeConfig
 import ch.admin.foitt.openid4vc.domain.model.keyBinding.BindingKeyPair
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.RequestKeyAttestationError
+import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestBatchKeyAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestKeyAttestation
 import ch.admin.foitt.wallet.platform.holderBinding.domain.model.GenerateProofKeyPairError
 import ch.admin.foitt.wallet.platform.holderBinding.domain.model.HolderBindingError
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class GenerateProofKeyPairsImpl @Inject constructor(
     private val createJWSKeyPairInSoftware: CreateJWSKeyPairInSoftware,
     private val requestKeyAttestation: RequestKeyAttestation,
+    private val requestBatchKeyAttestation: RequestBatchKeyAttestation,
 ) : GenerateProofKeyPairs {
 
     override suspend fun invoke(
@@ -31,18 +33,32 @@ class GenerateProofKeyPairsImpl @Inject constructor(
     ): Result<List<BindingKeyPair>, GenerateProofKeyPairError> = coroutineBinding {
         val cryptographicSuite = getCryptographicSuite(proofTypeConfig).bind()
 
-        buildList {
-            repeat(amount) {
-                add(
-                    when (val keyAttestationConfig = proofTypeConfig.keyAttestationsRequired) {
-                        null -> createSoftwareKeyPair(cryptographicSuite).bind()
-                        else -> createHardwareKeyPairWithKeyAttestation(
-                            actorDid = actorDid,
-                            signingAlgorithm = cryptographicSuite,
-                            keyStorageSecurityLevels = keyAttestationConfig.keyStorage
-                        ).bind()
+        when (val keyAttestationConfig = proofTypeConfig.keyAttestationsRequired) {
+            null -> buildList {
+                repeat(amount) {
+                    add(createSoftwareKeyPair(cryptographicSuite).bind())
+                }
+            }
+            // more than one key is a batch block, which is attested in a single request
+            else -> if (amount > 1) {
+                createHardwareKeyPairsWithBatchKeyAttestation(
+                    amount = amount,
+                    actorDid = actorDid,
+                    signingAlgorithm = cryptographicSuite,
+                    keyStorageSecurityLevels = keyAttestationConfig.keyStorage,
+                ).bind()
+            } else {
+                buildList {
+                    repeat(amount) {
+                        add(
+                            createHardwareKeyPairWithKeyAttestation(
+                                actorDid = actorDid,
+                                signingAlgorithm = cryptographicSuite,
+                                keyStorageSecurityLevels = keyAttestationConfig.keyStorage
+                            ).bind()
+                        )
                     }
-                )
+                }
             }
         }
     }
@@ -94,5 +110,27 @@ class GenerateProofKeyPairsImpl @Inject constructor(
             keyPair = keyPairWithAttestation.keyPair,
             attestationJwt = keyPairWithAttestation.attestation,
         )
+    }
+
+    private suspend fun createHardwareKeyPairsWithBatchKeyAttestation(
+        amount: Int,
+        actorDid: String,
+        signingAlgorithm: SigningAlgorithm,
+        keyStorageSecurityLevels: List<KeyStorageSecurityLevel>?,
+    ): Result<List<BindingKeyPair>, GenerateProofKeyPairError> = coroutineBinding {
+        val keyPairsWithAttestation = requestBatchKeyAttestation(
+            amount = amount,
+            actorDid = actorDid,
+            signingAlgorithm = signingAlgorithm,
+            keyStorageSecurityLevels = keyStorageSecurityLevels,
+        ).mapError(RequestKeyAttestationError::toGenerateProofKeyPairError)
+            .bind()
+
+        keyPairsWithAttestation.map { keyPairWithAttestation ->
+            BindingKeyPair(
+                keyPair = keyPairWithAttestation.keyPair,
+                attestationJwt = keyPairWithAttestation.attestation,
+            )
+        }
     }
 }

@@ -34,6 +34,8 @@ class QrGeneratorViewModel @Inject constructor(
 
     private val proximityRepository = getProximityRepositoryForScope()
 
+    private var shouldStartEngagement = false
+
     override val topBarState
         get() = when (bluetoothState.value.isReady()) {
             false -> TopBarState.Details(onUp = ::onUp, titleId = null)
@@ -42,26 +44,42 @@ class QrGeneratorViewModel @Inject constructor(
 
     fun onUp() = navManager.popBackStack()
 
-    var proximityEngagementJob: Job? = null
-    val qrCodePayloadMutable = MutableStateFlow<String?>(null)
+    private var proximityEngagementJob: Job? = null
+    private val qrCodePayloadMutable = MutableStateFlow<String?>(null)
     val qrCodePayload = qrCodePayloadMutable.asStateFlow()
 
     init {
         viewModelScope.launch {
-            bluetoothState.collect {
+            bluetoothState.collect { state ->
                 setTopBarState(topBarState)
+                if (state.isReady()) {
+                    tryStartEngagement()
+                }
             }
         }
     }
 
     fun reset() {
+        shouldStartEngagement = false
         proximityEngagementJob?.cancel()
         proximityRepository.reset()
         qrCodePayloadMutable.value = null
     }
 
     fun startEngagementListener() {
-        reset()
+        shouldStartEngagement = true
+        tryStartEngagement()
+    }
+
+    private fun tryStartEngagement() {
+        if (!shouldStartEngagement) return
+        if (!bluetoothState.value.isReady()) return
+        if (proximityEngagementJob?.isActive == true) return
+
+        proximityEngagementJob?.cancel()
+        proximityRepository.reset()
+        qrCodePayloadMutable.value = null
+
         proximityEngagementJob = viewModelScope.launch {
             proximityEngagement().collect {
                 it.onOk { event ->

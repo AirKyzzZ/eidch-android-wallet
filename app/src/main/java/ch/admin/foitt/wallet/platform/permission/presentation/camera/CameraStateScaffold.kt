@@ -5,8 +5,10 @@ import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import ch.admin.foitt.wallet.platform.permission.presentation.PermissionScaffold
+import ch.admin.foitt.wallet.platform.utils.openAppDetailsSettings
 
 @SuppressLint("InlinedApi")
 @Composable
@@ -16,6 +18,8 @@ fun CameraStateScaffold(
     updateContentShown: (Boolean) -> Unit,
     content: @Composable () -> Unit,
 ) {
+    val context = LocalContext.current
+
     LaunchedEffect(Unit) {
         // Update camera state when the screen is first composed, which is earlier than the LifecycleResumeEffect (this prevents flickering)
         onCameraPermissionChanged()
@@ -37,6 +41,12 @@ fun CameraStateScaffold(
             CameraPermissionNotGrantedScreenContent {
                 handler.requestPermission()
             }
+        },
+        permissionRationaleContent = {
+            updateContentShown(false)
+            CameraPermissionRationalScreenContent(
+                onOpenSettings = { context.openAppDetailsSettings() }
+            )
         },
         permissionGrantedContent = {
             updateContentShown(true)

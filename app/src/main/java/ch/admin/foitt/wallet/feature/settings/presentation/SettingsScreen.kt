@@ -108,16 +108,16 @@ private fun WalletSection(
     onSecurityAndPrivacy: () -> Unit,
     onLanguage: () -> Unit,
 ) = SettingsSection(
-    title = stringResource(R.string.tk_settings_wallet_sectionTitle)
+    title = stringResource(R.string.settings_general_sectionTitle)
 ) {
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_wallet_securityPrivacy),
+        title = stringResource(R.string.settings_general_securityPrivacy_body),
         leadingIcon = R.drawable.wallet_ic_lock_small,
         onClick = onSecurityAndPrivacy,
     )
     WalletListItems.Divider()
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_wallet_language),
+        title = stringResource(R.string.settings_general_language_body),
         leadingIcon = R.drawable.wallet_ic_globe,
         onClick = onLanguage,
     )
@@ -128,10 +128,10 @@ private fun FeedbackAndSupportSection(
     onHelp: () -> Unit,
     onFeedback: () -> Unit,
 ) = SettingsSection(
-    title = stringResource(R.string.tk_settings_feedbackSupport_sectionTitle)
+    title = stringResource(R.string.settings_help_sectionTitle)
 ) {
     WalletListItems.LinkSettingsItem(
-        title = stringResource(R.string.tk_settings_general_help_link_text),
+        title = stringResource(R.string.settings_help_contact_linkText),
         leadingIcon = R.drawable.wallet_ic_questionmark,
         onClick = onHelp,
     )
@@ -173,22 +173,22 @@ private fun GeneralSection(
     onLicenses: () -> Unit,
     onImprint: () -> Unit,
 ) = SettingsSection(
-    title = stringResource(R.string.tk_settings_general_sectionTitle)
+    title = stringResource(R.string.settings_legal_sectionTitle)
 ) {
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_general_accessibility),
+        title = stringResource(R.string.settings_legal_accessibility_body),
         leadingIcon = R.drawable.wallet_ic_accessibility,
         onClick = onAccessibility,
     )
     WalletListItems.Divider()
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_general_licences),
+        title = stringResource(R.string.settings_legal_licences_body),
         leadingIcon = R.drawable.wallet_ic_licenses,
         onClick = onLicenses,
     )
     WalletListItems.Divider()
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_general_imprint),
+        title = stringResource(R.string.settings_legal_legalNotice_body),
         leadingIcon = R.drawable.wallet_ic_info,
         onClick = onImprint,
     )

@@ -76,7 +76,7 @@ class CredentialWithDisplaysAndClustersDaoTest {
     fun getCredentialWithDisplaysAndClaimsFlowByIdTest() = runTest {
         credentialDao.insert(credential1)
         verifiableCredentialDao.insert(verifiableCredential1)
-        credentialDisplayDao.insertAll(listOf(credentialDisplay1))
+        credentialDisplayDao.insertAll(listOf(credentialDisplay1.entity))
         credentialClaimClusterEntityDao.insert(cluster1)
         credentialClaimClusterDisplayEntityDao.insert(clusterDisplay1)
         credentialClaimDao.insert(credentialClaim1)
@@ -113,7 +113,7 @@ class CredentialWithDisplaysAndClustersDaoTest {
     fun getNullableCredentialWithDisplaysAndClaimsFlowByIdTest() = runTest {
         credentialDao.insert(credential1)
         verifiableCredentialDao.insert(verifiableCredential1)
-        credentialDisplayDao.insertAll(listOf(credentialDisplay1))
+        credentialDisplayDao.insertAll(listOf(credentialDisplay1.entity))
         credentialClaimClusterEntityDao.insert(cluster1)
         credentialClaimClusterDisplayEntityDao.insert(clusterDisplay1)
         credentialClaimDao.insert(credentialClaim1)
@@ -164,7 +164,7 @@ class CredentialWithDisplaysAndClustersDaoTest {
     fun getCredentialsWithDisplaysAndClustersFlowTest() = runTest {
         credentialDao.insert(credential1)
         verifiableCredentialDao.insert(verifiableCredential1)
-        credentialDisplayDao.insertAll(listOf(credentialDisplay1))
+        credentialDisplayDao.insertAll(listOf(credentialDisplay1.entity))
         credentialClaimClusterEntityDao.insert(cluster1)
         credentialClaimClusterDisplayEntityDao.insert(clusterDisplay1)
         credentialClaimDao.insert(credentialClaim1)
@@ -172,7 +172,7 @@ class CredentialWithDisplaysAndClustersDaoTest {
 
         credentialDao.insert(credential2)
         verifiableCredentialDao.insert(verifiableCredential2)
-        credentialDisplayDao.insertAll(listOf(credentialDisplay2))
+        credentialDisplayDao.insertAll(listOf(credentialDisplay2.entity))
         credentialClaimClusterEntityDao.insert(cluster2)
         credentialClaimClusterDisplayEntityDao.insert(clusterDisplay2)
         credentialClaimDao.insert(credentialClaim2)

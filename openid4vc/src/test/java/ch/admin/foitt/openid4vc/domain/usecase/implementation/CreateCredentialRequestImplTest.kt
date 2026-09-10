@@ -97,6 +97,25 @@ class CreateCredentialRequestImplTest {
     }
 
     @Test
+    fun `An enc value the wallet does not support is skipped in favour of a supported one`() = runTest {
+        val result = useCase(
+            payloadEncryption = requestEncryption.withRequestEncValues(listOf(UNSUPPORTED_ENCRYPTION_VALUE, ENCRYPTION_VALUE)),
+            credentialType = verifiableCredentialType,
+        ).assertOk()
+
+        // The default mock only answers for ENCRYPTION_VALUE, so a result at all means that one was picked
+        assertEquals("verifiable credential request jwe", result)
+    }
+
+    @Test
+    fun `An issuer supporting no enc value of the wallet returns an error`() = runTest {
+        useCase(
+            payloadEncryption = requestEncryption.withRequestEncValues(listOf(UNSUPPORTED_ENCRYPTION_VALUE)),
+            credentialType = verifiableCredentialType,
+        ).assertErrorType(CredentialOfferError.Unexpected::class)
+    }
+
+    @Test
     fun `Error during jwe creation is mapped`() = runTest {
         coEvery {
             mockCreateJWE(
@@ -229,6 +248,10 @@ class CreateCredentialRequestImplTest {
         deferredCredentialRequestWithResponseEncryption
     ).value
 
+    private fun PayloadEncryption.withRequestEncValues(encValues: List<String>) = copy(
+        requestEncryption = requestEncryption.copy(encValuesSupported = encValues)
+    )
+
     private fun createKeyPair(): KeyPair {
         val generator = KeyPairGenerator.getInstance("EC")
         val spec = ECGenParameterSpec("secp256r1")
@@ -245,6 +268,7 @@ class CreateCredentialRequestImplTest {
         const val KEY_TYPE = "key type"
         const val KEY_ID = "key id"
         val ENCRYPTION_VALUE = EncryptionAlgorithm.A256GCM.name
+        const val UNSUPPORTED_ENCRYPTION_VALUE = "A256CBC-HS512"
         const val ZIP_VALUE = "DEF"
         const val ALG_VALUE = "alg value"
         const val WALLET_PUBLIC_KEY_ID = "wallet public key id"

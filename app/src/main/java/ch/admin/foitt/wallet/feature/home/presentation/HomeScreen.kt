@@ -313,7 +313,7 @@ fun WalletEmptyContent(
             }
             if (showBetaIdRequestButton) {
                 Buttons.FilledTertiary(
-                    text = stringResource(R.string.tk_global_getbetaid_primarybutton),
+                    text = stringResource(R.string.getBetaId_button),
                     onClick = onRequestBetaId,
                     startIcon = painterResource(id = R.drawable.wallet_ic_next_button),
                     isSmall = true

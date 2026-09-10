@@ -59,8 +59,8 @@ import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaim
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimClusterEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialClaimDisplay
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
-import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplayEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialKeyBindingEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DatabaseError
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
@@ -85,10 +85,10 @@ import timber.log.Timber
         VerifiableCredentialEntity::class,
         DeferredCredentialEntity::class,
         CredentialAuthenticationEntity::class,
-        CredentialDisplay::class,
+        CredentialDisplayEntity::class,
         CredentialClaim::class,
         CredentialClaimDisplay::class,
-        CredentialIssuerDisplay::class,
+        CredentialIssuerDisplayEntity::class,
         CredentialClaimClusterEntity::class,
         CredentialClaimClusterDisplayEntity::class,
         CredentialKeyBindingEntity::class,
@@ -137,6 +137,7 @@ import timber.log.Timber
         // Migration27to28 -> No Schema change
         AutoMigration(from = 28, to = 29, spec = Migration28to29::class), // Schema 6.12 to 6.13
         AutoMigration(from = 29, to = 30),
+        // Migration30to31
     ], // see also migrations in SqlCipherDatabaseInitializer
     exportSchema = true,
 )
@@ -213,6 +214,6 @@ abstract class AppDatabase : RoomDatabase() {
     }
 
     companion object {
-        internal const val DATABASE_VERSION = 30
+        internal const val DATABASE_VERSION = 31
     }
 }

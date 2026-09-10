@@ -26,7 +26,7 @@ class SettingsViewModel @Inject constructor(
     private val environmentSetupRepository: EnvironmentSetupRepository,
     setTopBarState: SetTopBarState,
 ) : ScreenViewModel(setTopBarState) {
-    override val topBarState = TopBarState.Details(navManager::popBackStack, R.string.tk_settings_title)
+    override val topBarState = TopBarState.Details(navManager::popBackStack, R.string.settings_screenTitle)
 
     private val _otpBypassValue = MutableStateFlow(false)
     val otpBypassValue = _otpBypassValue.asStateFlow()
@@ -49,7 +49,7 @@ class SettingsViewModel @Inject constructor(
 
     fun onLanguage() = navManager.navigateTo(Destination.LanguageScreen)
 
-    fun onHelp() = appContext.openLink(R.string.tk_settings_general_help_link_value)
+    fun onHelp() = appContext.openLink(R.string.settings_help_contact_linkValue)
 
     fun onFeedback() = appContext.openLink(R.string.tk_settings_general_feedback_link_value)
     fun onAccessibility() = navManager.navigateTo(Destination.AccessibilityScreen)

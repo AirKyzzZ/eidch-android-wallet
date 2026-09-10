@@ -6,6 +6,8 @@ import ch.admin.foitt.openid4vc.domain.model.GetKeyPairError
 import ch.admin.foitt.openid4vc.domain.model.KeyPairError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CreateDPoPProofJwtError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
+import ch.admin.foitt.openid4vc.domain.model.jwe.DecryptJWEError
+import ch.admin.foitt.openid4vc.domain.model.jwe.JWEError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.GenerateProofOfPossessionError
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.RequestClientAttestationError
@@ -449,6 +451,37 @@ internal fun CreateAutoVerificationDPoPError.toAvRepositoryError(): AvRepository
 
 internal fun CreateAutoVerificationDPoPError.toAvSubmitCaseError(): AvSubmitCaseError = when (this) {
     is Unexpected -> this
+}
+
+internal fun GetKeyPairError.toPairWalletError(): PairWalletError = when (this) {
+    is KeyPairError.NotFound -> {
+        val throwable = IllegalStateException("pairWallet: client attestation key pair not found")
+        Timber.e(t = throwable)
+        Unexpected(throwable)
+    }
+    is KeyPairError.Unexpected -> Unexpected(cause = throwable)
+}
+
+internal fun EIdRequestCaseRepositoryError.toPairWalletError(): PairWalletError = when (this) {
+    is Unexpected -> this
+}
+
+internal fun JsonParsingError.toPairWalletError(): PairWalletError = when (this) {
+    is JsonError.Unexpected -> Unexpected(throwable)
+}
+
+internal fun DecryptJWEError.toPairWalletError(): PairWalletError = when (this) {
+    is JWEError.PayloadSizeExceeded -> {
+        val throwable = IllegalStateException("pairWallet: decrypted payload exceeds the size limit")
+        Timber.e(t = throwable)
+        Unexpected(throwable)
+    }
+    is JWEError.UnsupportedHeader -> {
+        val throwable = IllegalStateException("pairWallet: unsupported JWE header: $reason")
+        Timber.e(t = throwable)
+        Unexpected(throwable)
+    }
+    is JWEError.Unexpected -> Unexpected(cause = throwable)
 }
 
 internal fun GetKeyPairError.toCreateAutoVerificationDPoPError(): CreateAutoVerificationDPoPError = when (this) {

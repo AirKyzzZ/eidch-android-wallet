@@ -117,7 +117,7 @@ class BiometricLoginViewModel @Inject constructor(
         biometricsLocked: Boolean = false
     ) = navManager.replaceCurrentWith(destination = Destination.PassphraseLoginScreen(biometricsLocked = biometricsLocked))
 
-    private fun navigateToAppVersionBlocked(title: String?, text: String?, playStoreUrl: String?, enforcedType: EnforcementType) {
+    private fun navigateToAppVersionBlocked(title: String?, text: String?, playStoreUrl: String, enforcedType: EnforcementType) {
         navManager.replaceCurrentWith(
             Destination.AppVersionBlockedScreen(
                 title = title,

@@ -11,12 +11,17 @@ interface ImageEntityDao {
     @Insert(onConflict = IGNORE)
     fun insert(imageEntity: ImageEntity): Long
 
+    @Insert(onConflict = IGNORE)
+    fun insertAll(imageEntities: Collection<ImageEntity>)
+
     @Query("SELECT * FROM imageentity WHERE hash = :hash")
     fun getByHash(hash: String): ImageEntity
 
     @Query(
         "DELETE FROM imageentity WHERE hash NOT IN (" +
-            "SELECT imageHash from activityactordisplayentity INTERSECT SELECT hash FROM imageentity" +
+            "SELECT imageHash FROM activityactordisplayentity WHERE imageHash IS NOT NULL " +
+            "UNION SELECT logoHash FROM credentialdisplay WHERE logoHash IS NOT NULL " +
+            "UNION SELECT imageHash FROM credentialissuerdisplay WHERE imageHash IS NOT NULL" +
             ")"
     )
     fun deleteImagesWithoutChildren()

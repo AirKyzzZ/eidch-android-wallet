@@ -13,6 +13,9 @@ import ch.admin.foitt.wallet.platform.credential.domain.usecase.GetAllAnyCredent
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.implementation.mock.MockNonComplianceData
 import ch.admin.foitt.wallet.platform.database.domain.model.Credential
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialIssuerDisplayEntity
+import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
+import ch.admin.foitt.wallet.platform.database.domain.model.ImageEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.RawCredentialData
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialIssuerDisplayRepo
@@ -151,14 +154,84 @@ class FetchAndCacheIssuerDisplayDataImplTest {
             AnyIssuerDisplay(
                 locale = issuerDisplayData1.locale,
                 name = issuerDisplayData1.name,
-                logo = issuerDisplayData1.image,
-                logoAltText = issuerDisplayData1.imageAltText,
+                logoImageData = issuerDisplayData1.image?.image,
+                logoAltText = issuerDisplayData1.entity.imageAltText,
             ),
             AnyIssuerDisplay(
                 locale = issuerDisplayData2.locale,
                 name = issuerDisplayData2.name,
-                logo = issuerDisplayData2.image,
-                logoAltText = issuerDisplayData2.imageAltText,
+                logoImageData = issuerDisplayData2.image?.image,
+                logoAltText = issuerDisplayData2.entity.imageAltText,
+            ),
+        )
+
+        coVerify {
+            mockCacheIssuerDisplayData(
+                trustCheckResult = any(),
+                issuerDisplays = expectedIssuerDisplays,
+                nonComplianceData = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `A display without a cached image falls back to the metadata logo uri`() = runTest {
+        every { mockRawCredentialData.rawOIDMetadata } returns compressedIssuerCredentialInfoWithDisplay
+        coEvery {
+            mockCredentialIssuerDisplayRepo.getIssuerDisplays(credentialId = any())
+        } returns Ok(listOf(issuerDisplayData1, issuerDisplayData2))
+
+        useCase(credentialId = CREDENTIAL_ID).assertOk()
+
+        val expectedIssuerDisplays = listOf(
+            AnyIssuerDisplay(
+                locale = DISPLAY_LOCALE1,
+                name = "issuerName1",
+                logo = LOGO_URI1,
+                logoImageData = null,
+                logoAltText = "issuerImageAltText1",
+            ),
+            AnyIssuerDisplay(
+                locale = DISPLAY_LOCALE2,
+                name = "issuerName2",
+                logo = null,
+                logoImageData = null,
+                logoAltText = "issuerImageAltText2",
+            ),
+        )
+
+        coVerify {
+            mockCacheIssuerDisplayData(
+                trustCheckResult = any(),
+                issuerDisplays = expectedIssuerDisplays,
+                nonComplianceData = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `A display with a cached image and the fallback display do not get a metadata logo`() = runTest {
+        every { mockRawCredentialData.rawOIDMetadata } returns compressedIssuerCredentialInfoWithDisplay
+        coEvery {
+            mockCredentialIssuerDisplayRepo.getIssuerDisplays(credentialId = any())
+        } returns Ok(listOf(issuerDisplayData1WithImage, fallbackIssuerDisplay))
+
+        useCase(credentialId = CREDENTIAL_ID).assertOk()
+
+        val expectedIssuerDisplays = listOf(
+            AnyIssuerDisplay(
+                locale = DISPLAY_LOCALE1,
+                name = "issuerName1",
+                logo = null,
+                logoImageData = LOGO_IMAGE_DATA1,
+                logoAltText = "issuerImageAltText1",
+            ),
+            AnyIssuerDisplay(
+                locale = DisplayLanguage.FALLBACK,
+                name = "issuerNameFallback",
+                logo = null,
+                logoImageData = null,
+                logoAltText = "issuerImageAltTextFallback",
             ),
         )
 
@@ -319,6 +392,8 @@ class FetchAndCacheIssuerDisplayDataImplTest {
         const val DISPLAY_LOCALE2 = "displayLocale2"
         const val TRUST_ISSUER_NAME1 = "trustIssuerName1"
         const val TRUST_ISSUER_NAME2 = "trustIssuerName2"
+        const val LOGO_URI1 = "https://example.com/logo1.png"
+        val LOGO_IMAGE_DATA1 = byteArrayOf(1, 2, 3)
 
         val TRUST_ISSUER_NAMES = mapOf(
             DISPLAY_LOCALE1 to TRUST_ISSUER_NAME1,
@@ -326,21 +401,26 @@ class FetchAndCacheIssuerDisplayDataImplTest {
         )
 
         val issuerDisplayData1 = CredentialIssuerDisplay(
-            id = 1L,
-            credentialId = CREDENTIAL_ID,
-            name = "issuerName1",
-            image = "issuerImage1",
-            imageAltText = "issuerImageAltText1",
-            locale = DISPLAY_LOCALE1,
+            entity = CredentialIssuerDisplayEntity(
+                id = 1L,
+                credentialId = CREDENTIAL_ID,
+                name = "issuerName1",
+                imageAltText = "issuerImageAltText1",
+                locale = DISPLAY_LOCALE1,
+            ),
+            image = null,
         )
 
         val issuerDisplayData2 = CredentialIssuerDisplay(
-            id = 2L,
-            credentialId = CREDENTIAL_ID,
-            name = "issuerName2",
-            image = "issuerImage2",
-            imageAltText = "issuerImageAltText2",
-            locale = DISPLAY_LOCALE2,
+            entity = CredentialIssuerDisplayEntity(
+                id = 2L,
+                credentialId = CREDENTIAL_ID,
+                name = "issuerName2",
+                imageAltText = "issuerImageAltText2",
+                locale = DISPLAY_LOCALE2,
+            ),
+            image = null
+
         )
 
         const val IDENTITY_TRUST_STATEMENT_JWT_STRING =
@@ -398,5 +478,39 @@ class FetchAndCacheIssuerDisplayDataImplTest {
             }
         """.trimIndent()
         val compressedIssuerCredentialInfo = issuerCredentialInfo.toByteArray().compress()
+
+        val issuerDisplayData1WithImage = CredentialIssuerDisplay(
+            entity = CredentialIssuerDisplayEntity(
+                id = 1L,
+                credentialId = CREDENTIAL_ID,
+                name = "issuerName1",
+                imageAltText = "issuerImageAltText1",
+                locale = DISPLAY_LOCALE1,
+            ),
+            image = ImageEntity(hash = "logoHash1", image = LOGO_IMAGE_DATA1),
+        )
+
+        val fallbackIssuerDisplay = CredentialIssuerDisplay(
+            entity = CredentialIssuerDisplayEntity(
+                id = 3L,
+                credentialId = CREDENTIAL_ID,
+                name = "issuerNameFallback",
+                imageAltText = "issuerImageAltTextFallback",
+                locale = DisplayLanguage.FALLBACK,
+            ),
+            image = null,
+        )
+
+        val displayJson =
+            "\"display\": [" +
+                "{\"locale\": \"$DISPLAY_LOCALE1\", \"name\": \"issuerName1\", \"logo\": {\"uri\": \"$LOGO_URI1\", \"alt_text\": \"issuerImageAltText1\"}}," +
+                "{\"locale\": \"$DISPLAY_LOCALE2\", \"name\": \"issuerName2\"}" +
+                "], "
+
+        val issuerCredentialInfoWithDisplay = issuerCredentialInfo.replace(
+            "\"credential_endpoint\":",
+            "$displayJson\"credential_endpoint\":",
+        )
+        val compressedIssuerCredentialInfoWithDisplay = issuerCredentialInfoWithDisplay.toByteArray().compress()
     }
 }

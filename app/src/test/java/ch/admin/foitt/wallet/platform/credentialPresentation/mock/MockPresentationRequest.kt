@@ -102,6 +102,17 @@ object MockPresentationRequest {
         state = "state",
     )
 
+    val authorizationRequestWithoutStateAndWithoutHolderBinding = authorizationRequestWithoutVqPS.copy(
+        dcqlQuery = DcqlQuery(
+            credentials = listOf(
+                CredentialQuery(
+                    id = "id",
+                    format = CredentialFormat.DC_SD_JWT.format,
+                )
+            )
+        ),
+    )
+
     fun invalidPresentationRequestClaims() = authorizationRequestWithoutVqPS.copy(
         dcqlQuery = DcqlQuery(
             credentials = listOf(

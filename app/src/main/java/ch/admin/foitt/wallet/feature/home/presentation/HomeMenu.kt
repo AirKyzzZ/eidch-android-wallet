@@ -119,24 +119,24 @@ private fun HomeMenuContent(
     ) {
         if (showEIdRequestButton) {
             MenuItem(
-                title = stringResource(R.string.tk_menu_homeList_orderEid),
+                title = stringResource(R.string.menu_orderEid_body),
                 leadingIcon = R.drawable.wallet_ic_credential,
                 onClick = onGetEId,
             )
         }
         if (showBetaIdRequestButton) {
             MenuItem(
-                title = stringResource(R.string.tk_menu_homeList_menu_add),
+                title = stringResource(R.string.menu_orderBetaId_body),
                 leadingIcon = R.drawable.wallet_ic_credential,
                 onClick = onGetBetaId,
             )
         }
         MenuItem(
-            title = stringResource(R.string.tk_menu_homeList_settings),
+            title = stringResource(R.string.menu_settings_body),
             leadingIcon = R.drawable.wallet_ic_settings,
             onClick = onSettings,
         )
-        val helpTitle = stringResource(R.string.tk_menu_homeList_help)
+        val helpTitle = stringResource(R.string.menu_help_body)
         val helpLinkAltText = stringResource(R.string.tk_global_externalLink_hint)
         MenuItem(
             title = helpTitle,

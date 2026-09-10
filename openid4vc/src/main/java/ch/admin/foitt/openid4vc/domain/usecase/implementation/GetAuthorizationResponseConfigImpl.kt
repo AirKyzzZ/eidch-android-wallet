@@ -56,11 +56,38 @@ internal class GetAuthorizationResponseConfigImpl @Inject constructor(
             state = authorizationRequest.state,
         )
 
-        if (authorizationRequest.responseMode == PresentationResponseMode.DIRECT_POST_JWT.value) {
-            getJWEAuthorizationResponseConfig(authorizationRequest, authorizationResponse)
-        } else {
-            Err(PresentationRequestError.Unexpected(IllegalStateException("invalid response mode")))
+        when (authorizationRequest.responseMode) {
+            PresentationResponseMode.DIRECT_POST_JWT.value -> {
+                getJWEAuthorizationResponseConfig(authorizationRequest, authorizationResponse)
+            }
+            // Keep DC_API_JWT during the "migration" phase as this was used before. We adjusted it
+            // as technically the response is not JWE encrypted on the OID4VP level, but already end-to-
+            // -end encrypted on the transport protocol level.
+            PresentationResponseMode.DC_API.value, PresentationResponseMode.DC_API_JWT.value -> {
+                getDCQLAuthorizationResponseConfig(authorizationResponse)
+            }
+            else -> {
+                Err(PresentationRequestError.Unexpected(IllegalStateException("invalid response mode")))
+            }
         }.bind()
+    }
+
+    private fun getDCQLAuthorizationResponseConfig(
+        authorizationResponse: AuthorizationResponse.Dcql
+    ): Result<AuthorizationResponseConfig, GetAuthorizationResponseConfigError> = binding {
+        val value = safeJson.safeEncodeObjectToString(authorizationResponse.vpToken)
+            .mapError(JsonParsingError::toGetPresentationRequestConfigError)
+            .bind()
+        AuthorizationResponseConfig(
+            type = AuthorizationResponseType.DCQL,
+            params = buildMap {
+                put(AuthorizationResponseParam.VP_TOKEN, value)
+
+                authorizationResponse.state?.let {
+                    put(AuthorizationResponseParam.STATE, it)
+                }
+            }
+        )
     }
 
     private fun getAuthorizationResponseByDcqlId(

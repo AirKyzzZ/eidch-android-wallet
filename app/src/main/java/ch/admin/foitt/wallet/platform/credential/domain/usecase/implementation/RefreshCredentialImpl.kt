@@ -45,6 +45,7 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.mapError
+import com.github.michaelbull.result.onErr
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -138,8 +139,14 @@ internal class RefreshCredentialImpl @Inject constructor(
         ).mapError(GetPayloadEncryptionTypeError::toFetchCredentialError).bind()
 
         val dpopKeyPair = getBindingKeyPair(authentication)
+            .onErr { error ->
+                Timber.d(message = "Credential refresh: resolving the stored DPoP key pair failed: $error")
+            }
             .mapError(GetBindingKeyPairError::toFetchCredentialError).bind()
             ?: generateDPoPKeyPair(verifiableCredentialParams, actorDid)
+                .onErr { error ->
+                    Timber.d(message = "Credential refresh: generating a DPoP key pair failed: $error")
+                }
                 .mapError(GenerateDPoPKeyPairError::toFetchCredentialError).bind()
 
         val identityTrustStatement = processIdentityTrustStatement(issuerInfo.identityTrustStatement, actorDid)
@@ -151,7 +158,9 @@ internal class RefreshCredentialImpl @Inject constructor(
             bindingKeyPairs = proofKeyPairs,
             payloadEncryption = payloadEncryption,
             dpopKeyPair = dpopKeyPair,
-        ).mapError(FetchCredentialByConfigError::toFetchCredentialError).bind()
+        ).onErr { error ->
+            Timber.d(message = "Credential refresh: fetching the credential failed: $error")
+        }.mapError(FetchCredentialByConfigError::toFetchCredentialError).bind()
 
         val oldBundleItems = bundleItemRepository.getAllByCredentialId(credentialId)
             .mapError(BundleItemRepositoryError::toFetchCredentialError).bind()
@@ -165,7 +174,9 @@ internal class RefreshCredentialImpl @Inject constructor(
                 identityTrustStatement = identityTrustStatement,
                 rawAndParsedCredentialInfo = rawAndParsedCredentialInfo,
                 credentialConfig = config,
-            ).bind()
+            ).onErr { error ->
+                Timber.d(message = "Credential refresh: saving the batch credential failed: $error")
+            }.bind()
 
             is AnyDeferredCredential -> {
                 val exception = IllegalStateException("RefreshCredential: unexpectedly received a deferred credential")
@@ -180,7 +191,9 @@ internal class RefreshCredentialImpl @Inject constructor(
                 identityTrustStatement = identityTrustStatement,
                 rawAndParsedCredentialInfo = rawAndParsedCredentialInfo,
                 credentialConfig = config,
-            ).bind()
+            ).onErr { error ->
+                Timber.d(message = "Credential refresh: saving the credential failed: $error")
+            }.bind()
         }
 
         deleteBundleItems(oldBundleItems.map { it.id })

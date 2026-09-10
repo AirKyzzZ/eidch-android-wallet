@@ -65,9 +65,7 @@ internal class FetchAndCacheVerifierDisplayDataImpl @Inject constructor(
         val vcSchemaTrustStatus = trustCheckResult.vcSchemaTrustStatus
 
         val verifierTrustNameDisplay: List<ActorField<String>>? =
-            trustStatement?.entityName?.filterKeys {
-                it.isNotBlank()
-            }?.toActorField() // trust statement available -> use it without metadata as default
+            trustStatement?.entityName?.toActorField() // trust statement available -> use it without metadata as default
                 ?: verifierNameDisplay // trust statement not available -> use metadata
         val verifierTrustLogoDisplay: List<ActorField<String>>? = verifierLogoDisplay
 

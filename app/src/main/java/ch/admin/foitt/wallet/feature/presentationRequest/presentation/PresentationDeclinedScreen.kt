@@ -3,10 +3,12 @@ package ch.admin.foitt.wallet.feature.presentationRequest.presentation
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.feature.presentationRequest.presentation.model.PresentationDeclinedUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
 import ch.admin.foitt.wallet.platform.badges.presentation.BadgeBottomSheet
@@ -15,11 +17,13 @@ import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
+import ch.admin.foitt.wallet.theme.WalletButtonColors
 import ch.admin.foitt.wallet.theme.WalletTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PresentationDeclinedScreen(viewModel: PresentationDeclinedViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val badgeBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val badgeBottomSheet = viewModel.badgeBottomSheet.collectAsStateWithLifecycle().value
     if (badgeBottomSheet != null) {
@@ -30,37 +34,42 @@ fun PresentationDeclinedScreen(viewModel: PresentationDeclinedViewModel) {
         )
     }
     PresentationDeclinedContent(
-        verifierUiState = viewModel.verifierUiState.collectAsStateWithLifecycle().value,
+        uiState = uiState,
         redirectUri = viewModel.redirectUri,
         onBack = viewModel::onBack,
         onActorNameTap = viewModel::onActorNameTap,
-        onReportedActorInfo = viewModel::onReportedActorInfo
+        onReportedActorInfo = viewModel::onReportedActorInfo,
+        onReport = viewModel::onReport,
     )
 }
 
 @Composable
 private fun PresentationDeclinedContent(
-    verifierUiState: ActorUiState,
+    uiState: PresentationDeclinedUiState,
     redirectUri: String?,
     onBack: () -> Unit,
+    onReport: () -> Unit,
     onActorNameTap: () -> Unit,
     onReportedActorInfo: () -> Unit,
 ) {
     CredentialActionFeedbackCard(
-        issuer = verifierUiState,
+        issuer = uiState.verifierUiState,
         contentTextFirstParagraphText = if (redirectUri == null) {
             stringResource(R.string.tk_present_result_declined_primary)
         } else {
-            stringResource(R.string.tk_present_result_declined_redirect_primary, verifierName(verifierUiState))
+            stringResource(R.string.tk_present_result_declined_redirect_primary, verifierName(uiState.verifierUiState))
         },
         iconAlwaysVisible = true,
         contentIcon = R.drawable.wallet_ic_circular_cross,
         primaryButtonText = if (redirectUri == null) {
             stringResource(R.string.tk_global_close)
         } else {
-            stringResource(R.string.tk_global_close_redirect, verifierName(verifierUiState))
+            stringResource(R.string.tk_global_close_redirect, verifierName(uiState.verifierUiState))
         },
         onPrimaryButton = onBack,
+        ternaryButtonText = if (uiState.canReport) R.string.tk_nonCompliance_report_form_reportSection_title else null,
+        onTernaryButton = onReport,
+        ternaryButtonColors = WalletButtonColors.tonal(),
         onActorNameTap = onActorNameTap,
         onReportedActorInfo = onReportedActorInfo
     )
@@ -77,18 +86,22 @@ private fun PresentationDeclinedPreview() {
     WalletTheme {
         PresentationDeclinedContent(
             onBack = {},
-            verifierUiState = ActorUiState(
-                name = "My Verfifier Name",
-                painter = painterResource(id = R.drawable.ic_swiss_cross_small),
-                trustStatus = TrustStatus.TRUSTED,
-                vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
-                actorType = ActorType.VERIFIER,
-                actorComplianceState = ActorComplianceState.REPORTED,
-                nonComplianceReason = "report reason",
+            uiState = PresentationDeclinedUiState(
+                ActorUiState(
+                    name = "My Verfifier Name",
+                    painter = painterResource(id = R.drawable.ic_swiss_cross_small),
+                    trustStatus = TrustStatus.TRUSTED,
+                    vcSchemaTrustStatus = VcSchemaTrustStatus.TRUSTED,
+                    actorType = ActorType.VERIFIER,
+                    actorComplianceState = ActorComplianceState.REPORTED,
+                    nonComplianceReason = "report reason",
+                ),
+                canReport = true,
             ),
             redirectUri = "redirectUri",
             onActorNameTap = {},
-            onReportedActorInfo = {}
+            onReportedActorInfo = {},
+            onReport = {}
         )
     }
 }
