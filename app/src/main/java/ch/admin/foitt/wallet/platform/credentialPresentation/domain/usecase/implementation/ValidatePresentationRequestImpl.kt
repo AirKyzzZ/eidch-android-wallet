@@ -152,8 +152,9 @@ class ValidatePresentationRequestImpl @Inject constructor(
 
     private fun ClientIdentifier.prefixMatchesType(type: VerificationProcessType) =
         when (type) {
-            VerificationProcessType.NETWORK -> clientIdPrefix == ClientIdentifier.ClientIdPrefix.DecentralizedIdentifier ||
-                clientIdPrefix == ClientIdentifier.ClientIdPrefix.X509Hash
+            VerificationProcessType.NETWORK ->
+                clientIdPrefix == ClientIdentifier.ClientIdPrefix.DecentralizedIdentifier ||
+                    clientIdPrefix == ClientIdentifier.ClientIdPrefix.X509Hash
             VerificationProcessType.PROXIMITY -> clientIdPrefix == ClientIdentifier.ClientIdPrefix.VerifierAttestationJwt
         }
 

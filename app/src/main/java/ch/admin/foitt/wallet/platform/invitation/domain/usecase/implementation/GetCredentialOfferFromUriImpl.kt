@@ -8,10 +8,10 @@ import ch.admin.foitt.wallet.platform.invitation.domain.usecase.FetchCredentialO
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.GetCredentialOfferFromUri
 import ch.admin.foitt.wallet.platform.utils.JsonParsingError
 import ch.admin.foitt.wallet.platform.utils.SafeJson
-import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.Err
-import com.github.michaelbull.result.coroutines.runSuspendCatching
+import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
+import com.github.michaelbull.result.coroutines.runSuspendCatching
 import com.github.michaelbull.result.mapError
 import com.github.michaelbull.result.toErrorIf
 import java.net.URI

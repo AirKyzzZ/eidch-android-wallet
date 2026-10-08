@@ -171,8 +171,7 @@ class GetCredentialOfferFlowDataFromUriTest {
 
         unsafeUris.forEach { uri ->
             assertTrue(
-                getCredentialOfferUseCase(URI(uri)).getError() is
-                    InvitationError.CredentialOfferDeserializationFailed,
+                getCredentialOfferUseCase(URI(uri)).getError() is InvitationError.CredentialOfferDeserializationFailed,
                 "unsafe credential offer reference should be rejected: $uri",
             )
         }
