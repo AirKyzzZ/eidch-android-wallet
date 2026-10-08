@@ -39,6 +39,7 @@ import ch.admin.foitt.wallet.platform.payloadEncryption.domain.usecase.GetPayloa
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV2TrustStatement
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.ProcessIdentityTrustStatementError
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.ProcessIdentityTrustStatement
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
@@ -64,6 +65,7 @@ class FetchAndSaveCredentialImpl @Inject constructor(
     private val environmentSetupRepository: EnvironmentSetupRepository,
     private val generateDPoPKeyPair: GenerateDPoPKeyPair,
     private val getActorEnvironment: GetActorEnvironment,
+    private val isVeranaTrusted: IsVeranaTrusted,
 ) : FetchAndSaveCredential {
     override suspend fun invoke(
         credentialOffer: CredentialOffer,
@@ -155,7 +157,7 @@ class FetchAndSaveCredentialImpl @Inject constructor(
             is AnyVerifiedBatchCredential -> anyCredentialResult.vcSdJwtCredentials.first().issuer
             is AnyDeferredCredential -> null
         }
-        if (issuerDid != null && getActorEnvironment(issuerDid) == ActorEnvironment.EXTERNAL) {
+        if (issuerDid != null && getActorEnvironment(issuerDid) == ActorEnvironment.EXTERNAL && !isVeranaTrusted(issuerDid)) {
             return Err(CredentialError.UnknownRegistry)
         }
         return Ok(Unit)

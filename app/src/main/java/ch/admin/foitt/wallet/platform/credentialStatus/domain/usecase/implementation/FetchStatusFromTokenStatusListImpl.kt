@@ -1,6 +1,8 @@
 package ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation
 
 import ch.admin.foitt.didResolver.domain.DidResolverHelper
+import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
+import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.FetchStatusFromTokenStatusListError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.ParseTokenStatusStatusListError
@@ -14,6 +16,7 @@ import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.ParseToken
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.ValidateTokenStatusList
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
@@ -28,6 +31,8 @@ class FetchStatusFromTokenStatusListImpl @Inject constructor(
     private val credentialStatusRepository: CredentialStatusRepository,
     private val validateTokenStatusList: ValidateTokenStatusList,
     private val parseTokenStatusList: ParseTokenStatusList,
+    private val getActorEnvironment: GetActorEnvironment,
+    private val isVeranaTrusted: IsVeranaTrusted,
 ) : FetchStatusFromTokenStatusList {
 
     override suspend fun invoke(
@@ -42,13 +47,16 @@ class FetchStatusFromTokenStatusListImpl @Inject constructor(
             }.bind()
         val trustedStatusListHost = environmentSetupRepository.statusListMapping[issuerDidUrl.host]
 
-        runSuspendCatching {
+        val statusListHostCheck = runSuspendCatching {
             val statusListHost = URI(statusList.uri).host
             check(trustedStatusListHost == statusListHost) { "status list host is not trusted" }
-        }.mapError { throwable ->
-            Timber.e(t = throwable, message = "status list not in swiyu registry")
-            CredentialStatusError.UnknownRegistry
-        }.bind()
+        }
+        if (statusListHostCheck.isErr && !isVeranaTrustedExternalIssuer(credentialIssuer)) {
+            statusListHostCheck.mapError { throwable ->
+                Timber.e(t = throwable, message = "status list not in swiyu registry")
+                CredentialStatusError.UnknownRegistry
+            }.bind()
+        }
 
         val jwt = credentialStatusRepository.fetchTokenStatusListJwt(statusList.uri).bind()
 
@@ -62,6 +70,9 @@ class FetchStatusFromTokenStatusListImpl @Inject constructor(
 
         mapStatus(value)
     }
+
+    private suspend fun isVeranaTrustedExternalIssuer(issuer: String) =
+        getActorEnvironment(issuer) == ActorEnvironment.EXTERNAL && isVeranaTrusted(issuer)
 
     private fun mapStatus(status: Int): CredentialStatus {
         return when (status) {

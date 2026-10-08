@@ -38,6 +38,7 @@ import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialOfferRepository
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV2TrustStatement
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustCheckResult
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -79,6 +80,9 @@ class SaveCredentialFromDeferredImplTest {
 
     @MockK
     private lateinit var mockGetActorEnvironment: GetActorEnvironment
+
+    @MockK
+    private lateinit var mockIsVeranaTrusted: IsVeranaTrusted
 
     @MockK
     private lateinit var mockRawAndParsedIssuerCredentialInfo: RawAndParsedIssuerCredentialInfo
@@ -133,6 +137,7 @@ class SaveCredentialFromDeferredImplTest {
             ocaBundler = mockOcaBundler,
             generateAnyDisplays = mockGenerateAnyDisplays,
             credentialOfferRepository = mockCredentialOfferRepository,
+            isVeranaTrusted = mockIsVeranaTrusted,
         )
 
         setupDefaultMocks()
@@ -151,6 +156,7 @@ class SaveCredentialFromDeferredImplTest {
         coEvery { mockGetSignedMetadataDid(mockIssuerCredentialInfoJwt) } returns Ok(vcIssuer01)
 
         coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.PRODUCTION
+        coEvery { mockIsVeranaTrusted(any()) } returns false
 
         coEvery {
             mockFetchVcMetadataByFormat(any())
@@ -320,6 +326,31 @@ class SaveCredentialFromDeferredImplTest {
         coVerify(exactly = 0) {
             mockCredentialOfferRepository.saveCredentialFromDeferred(any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
+    }
+
+    @Test
+    fun `A deferred credential from an EXTERNAL issuer that Verana trusts is saved`() = runTest {
+        coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.EXTERNAL
+        coEvery { mockIsVeranaTrusted(vcIssuer01) } returns true
+
+        useCase(
+            deferredCredentialEntity = deferredCredentialWithBinding01,
+            credentialResponse = credentialResponse01,
+            rawAndParsedIssuerCredentialInfo = mockRawAndParsedIssuerCredentialInfo,
+            identityV2TrustStatement = mockTrustStatement,
+        ).assertOk()
+    }
+
+    @Test
+    fun `A deferred credential from a Swiss registry issuer never asks Verana`() = runTest {
+        useCase(
+            deferredCredentialEntity = deferredCredentialWithBinding01,
+            credentialResponse = credentialResponse01,
+            rawAndParsedIssuerCredentialInfo = mockRawAndParsedIssuerCredentialInfo,
+            identityV2TrustStatement = mockTrustStatement,
+        ).assertOk()
+
+        coVerify(exactly = 0) { mockIsVeranaTrusted(any()) }
     }
 
     @Test

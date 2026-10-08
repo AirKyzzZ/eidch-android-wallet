@@ -30,6 +30,7 @@ import ch.admin.foitt.wallet.platform.ssi.domain.model.CredentialOfferRepository
 import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialOfferRepository
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV2TrustStatement
 import ch.admin.foitt.wallet.platform.utils.compress
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
@@ -49,6 +50,7 @@ class SaveCredentialFromDeferredImpl @Inject constructor(
     private val ocaBundler: OcaBundler,
     private val generateAnyDisplays: GenerateAnyDisplays,
     private val credentialOfferRepository: CredentialOfferRepository,
+    private val isVeranaTrusted: IsVeranaTrusted,
 ) : SaveCredentialFromDeferred {
     override suspend fun invoke(
         deferredCredentialEntity: DeferredCredentialWithAuthenticationAndKeyBinding,
@@ -86,7 +88,7 @@ class SaveCredentialFromDeferredImpl @Inject constructor(
 
         // Reject issuers whose DID is not on the BaseRegistry
         val issuerEnvironment = getActorEnvironment(anyCredential.issuer)
-        if (issuerEnvironment == ActorEnvironment.EXTERNAL) {
+        if (issuerEnvironment == ActorEnvironment.EXTERNAL && !isVeranaTrusted(anyCredential.issuer)) {
             Err(CredentialError.UnknownRegistry).bind()
         }
 

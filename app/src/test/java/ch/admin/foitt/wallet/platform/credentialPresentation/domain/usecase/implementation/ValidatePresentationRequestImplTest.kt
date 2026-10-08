@@ -26,6 +26,7 @@ import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustRegistryEr
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VerificationQueryPublicStatement
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.ProcessIdentityTrustStatement
 import ch.admin.foitt.wallet.platform.veranaTrust.VeranaDevnetFixtures
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
@@ -79,6 +80,9 @@ class ValidatePresentationRequestImplTest {
     private lateinit var mockValidateVerificationQueryPublicStatement: ValidateVerificationQueryPublicStatement
 
     @MockK
+    private lateinit var mockIsVeranaTrusted: IsVeranaTrusted
+
+    @MockK
     private lateinit var mockIdentityTrustStatement: IdentityV2TrustStatement
 
     @SpyK
@@ -99,6 +103,7 @@ class ValidatePresentationRequestImplTest {
             verifyRequestObjectSignature = mockVerifyRequestObjectSignature,
             getActorEnvironment = mockGetActorEnvironment,
             validateVqPs = mockValidateVerificationQueryPublicStatement,
+            isVeranaTrusted = mockIsVeranaTrusted,
         )
 
         setupDefaultMocks()
@@ -525,6 +530,21 @@ class ValidatePresentationRequestImplTest {
     }
 
     @Test
+    fun `Verifier with EXTERNAL actor environment that Verana trusts returns presentation request`() = runTest {
+        coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.EXTERNAL
+        coEvery { mockIsVeranaTrusted(CLIENT_ID) } returns true
+
+        useCase(VerificationProcessType.NETWORK, mockRequestObject).assertOk()
+    }
+
+    @Test
+    fun `Verifier in the Swiss registry never asks Verana`() = runTest {
+        useCase(VerificationProcessType.NETWORK, mockRequestObject).assertOk()
+
+        coVerify(exactly = 0) { mockIsVeranaTrusted(any()) }
+    }
+
+    @Test
     fun `Proximity request without DCQL query returns an invalid presentation error`() = runTest {
         val authRequest = MockPresentationRequest.authorizationRequestDcApi.copy(dcqlQuery = null)
         every { mockPresentationJwt.payloadJson } returns authRequest.toJsonObject()
@@ -574,6 +594,7 @@ class ValidatePresentationRequestImplTest {
         } returns Ok(RequestObjectVerificationOutcome.DID_PATH)
 
         coEvery { mockGetActorEnvironment(CLIENT_ID) } returns ActorEnvironment.PRODUCTION
+        coEvery { mockIsVeranaTrusted(any()) } returns false
 
         val vqPS = mockk<VerificationQueryPublicStatement> {
             every { request.scope } returns SCOPE

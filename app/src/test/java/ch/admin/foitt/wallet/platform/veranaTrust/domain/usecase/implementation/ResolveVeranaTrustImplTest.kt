@@ -18,6 +18,11 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 class ResolveVeranaTrustImplTest {
 
@@ -102,12 +107,49 @@ class ResolveVeranaTrustImplTest {
         assertEquals(VeranaTrustStatus.TRUSTED, useCase(DID).status)
 
         coEvery { indexer.fetchEcosystemDid(restricted, ECOSYSTEM_ID) } returns "did:webvh:QmRogue:rogue.example"
-        val rogue = useCase(DID)
+        val rogue = ResolveVeranaTrustImpl(indexer, listOf(restricted))(DID)
         assertEquals(VeranaTrustStatus.UNTRUSTED, rogue.status)
         assertEquals(VeranaUntrustedReason.ECOSYSTEM_NOT_TRUSTED, rogue.reason)
 
         coEvery { indexer.fetchEcosystemDid(restricted, ECOSYSTEM_ID) } returns null
+        assertEquals(VeranaTrustStatus.UNVERIFIED, ResolveVeranaTrustImpl(indexer, listOf(restricted))(DID).status)
+    }
+
+    @Test
+    fun `a TRUSTED resolution is reused for a minute`() = runTest {
+        val clock = MutableClock()
+        val useCase = ResolveVeranaTrustImpl(indexer, listOf(DEVNET), clock)
+        coEvery { indexer.resolve(DEVNET, DID) } returns resolved(trusted = true, network = DEVNET)
+
+        useCase(DID)
+        clock.advanceBy(Duration.ofSeconds(59))
+        assertEquals(VeranaTrustStatus.TRUSTED, useCase(DID).status)
+        coVerify(exactly = 1) { indexer.resolve(DEVNET, DID) }
+
+        clock.advanceBy(Duration.ofSeconds(1))
+        useCase(DID)
+        coVerify(exactly = 2) { indexer.resolve(DEVNET, DID) }
+    }
+
+    @Test
+    fun `an untrusted resolution is never reused`() = runTest {
+        val useCase = ResolveVeranaTrustImpl(indexer, listOf(DEVNET))
+        coEvery { indexer.resolve(DEVNET, DID) } returns VeranaIndexerAnswer.Unanswered
+
         assertEquals(VeranaTrustStatus.UNVERIFIED, useCase(DID).status)
+        coEvery { indexer.resolve(DEVNET, DID) } returns resolved(trusted = true, network = DEVNET)
+
+        assertEquals(VeranaTrustStatus.TRUSTED, useCase(DID).status)
+        coVerify(exactly = 2) { indexer.resolve(DEVNET, DID) }
+    }
+
+    private class MutableClock(private var now: Instant = Instant.parse("2026-10-08T12:00:00Z")) : Clock() {
+        override fun getZone(): ZoneId = ZoneOffset.UTC
+        override fun withZone(zone: ZoneId?): Clock = this
+        override fun instant(): Instant = now
+        fun advanceBy(duration: Duration) {
+            now = now.plus(duration)
+        }
     }
 
     private fun resolved(trusted: Boolean, network: VeranaNetwork) = VeranaIndexerAnswer.Resolved(

@@ -9,6 +9,7 @@ import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialSt
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusList
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusListResponse
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.ValidateTokenStatusList
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import ch.admin.foitt.wallet.util.SafeJsonTestInstance.safeJson
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
@@ -16,6 +17,7 @@ import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.unmockkAll
@@ -39,6 +41,9 @@ class ValidateTokenStatusListImplTest {
     @MockK
     private lateinit var mockVerifyJwtSignatureFromDid: VerifyJwtSignatureFromDid
 
+    @MockK
+    private lateinit var mockIsVeranaTrusted: IsVeranaTrusted
+
     private lateinit var useCase: ValidateTokenStatusList
 
     @BeforeEach
@@ -50,10 +55,12 @@ class ValidateTokenStatusListImplTest {
             getActorEnvironment = mockGetActorEnvironment,
             verifyJwtSignatureFromDid = mockVerifyJwtSignatureFromDid,
             safeJson = safeJson,
+            isVeranaTrusted = mockIsVeranaTrusted,
         )
 
         every { mockDidResolverHelper.getDidStringFromAbsoluteKeyId(KEY_ID) } returns Ok(ISSUER)
         coEvery { mockGetActorEnvironment(ISSUER) } returns ActorEnvironment.PRODUCTION
+        coEvery { mockIsVeranaTrusted(any()) } returns false
         coEvery { mockVerifyJwtSignatureFromDid(kid = any(), jwt = any()) } returns Ok(Unit)
     }
 
@@ -151,6 +158,21 @@ class ValidateTokenStatusListImplTest {
         coEvery { mockGetActorEnvironment(ISSUER) } returns ActorEnvironment.EXTERNAL
 
         useCase(ISSUER, JWT, SUBJECT).assertErrorType(CredentialStatusError.UnknownRegistry::class)
+    }
+
+    @Test
+    fun `Validating token status list of an actor outside the registries that Verana trusts returns response`() = runTest {
+        coEvery { mockGetActorEnvironment(ISSUER) } returns ActorEnvironment.EXTERNAL
+        coEvery { mockIsVeranaTrusted(ISSUER) } returns true
+
+        assertEquals(tokenResponse, useCase(ISSUER, JWT, SUBJECT).assertOk())
+    }
+
+    @Test
+    fun `Validating token status list of an actor in the registries never asks Verana`() = runTest {
+        useCase(ISSUER, JWT, SUBJECT).assertOk()
+
+        coVerify(exactly = 0) { mockIsVeranaTrusted(any()) }
     }
 
     @Test

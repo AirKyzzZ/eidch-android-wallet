@@ -17,17 +17,36 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 class ResolveVeranaTrustImpl(
     private val indexerRepository: VeranaIndexerRepository,
     private val networks: List<VeranaNetwork>,
+    private val clock: Clock = Clock.systemUTC(),
 ) : ResolveVeranaTrust {
 
     @Inject
     constructor(indexerRepository: VeranaIndexerRepository) : this(indexerRepository, VERANA_NETWORKS)
 
-    override suspend fun invoke(did: String): VeranaTrustResolution {
+    private val didLocks = ConcurrentHashMap<String, Mutex>()
+    private val trustedResolutions = ConcurrentHashMap<String, Pair<VeranaTrustResolution, Instant>>()
+
+    override suspend fun invoke(did: String): VeranaTrustResolution = didLocks.getOrPut(did) { Mutex() }.withLock {
+        trustedResolutions[did]?.takeIf { (_, expiresAt) -> clock.instant().isBefore(expiresAt) }?.first
+            ?: resolve(did).also { resolution ->
+                if (resolution.status == VeranaTrustStatus.TRUSTED) {
+                    trustedResolutions[did] = resolution to clock.instant().plus(TRUSTED_RESOLUTION_TTL)
+                }
+            }
+    }
+
+    private suspend fun resolve(did: String): VeranaTrustResolution {
         if (!VeranaDids.hasDidDocument(did)) {
             return unresolved(did, VeranaTrustStatus.UNTRUSTED, VeranaUntrustedReason.NO_DID_DOCUMENT)
         }
@@ -95,5 +114,9 @@ class ResolveVeranaTrustImpl(
         return untrusted.firstOrNull { it.reason != VeranaUntrustedReason.NOT_REGISTERED }
             ?: untrusted.firstOrNull()
             ?: unresolved(did, VeranaTrustStatus.UNTRUSTED, VeranaUntrustedReason.NOT_REGISTERED)
+    }
+
+    private companion object {
+        val TRUSTED_RESOLUTION_TTL: Duration = Duration.ofMinutes(1)
     }
 }

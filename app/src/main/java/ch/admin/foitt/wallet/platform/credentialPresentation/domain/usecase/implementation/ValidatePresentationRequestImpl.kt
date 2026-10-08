@@ -31,6 +31,7 @@ import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VerificationQue
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.ProcessIdentityTrustStatement
 import ch.admin.foitt.wallet.platform.utils.JsonParsingError
 import ch.admin.foitt.wallet.platform.utils.SafeJson
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
@@ -48,6 +49,7 @@ class ValidatePresentationRequestImpl @Inject constructor(
     private val verifyRequestObjectSignature: VerifyRequestObjectSignature,
     private val getActorEnvironment: GetActorEnvironment,
     private val validateVqPs: ValidateVerificationQueryPublicStatement,
+    private val isVeranaTrusted: IsVeranaTrusted,
 ) : ValidatePresentationRequest {
     override suspend fun invoke(
         verificationProcessType: VerificationProcessType,
@@ -116,8 +118,8 @@ class ValidatePresentationRequestImpl @Inject constructor(
         }
 
         if (authorizationRequest.clientIdentifier.clientIdPrefix == ClientIdentifier.ClientIdPrefix.DecentralizedIdentifier) {
-            val verifierEnvironment = getActorEnvironment(authorizationRequest.clientIdentifier.clientId)
-            if (verifierEnvironment == ActorEnvironment.EXTERNAL) {
+            val verifierDid = authorizationRequest.clientIdentifier.clientId
+            if (getActorEnvironment(verifierDid) == ActorEnvironment.EXTERNAL && !isVeranaTrusted(verifierDid)) {
                 Err(CredentialPresentationError.UnknownRegistry(responseUri, authorizationRequest.state)).bind()
             }
         }

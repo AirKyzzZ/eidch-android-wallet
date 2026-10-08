@@ -62,6 +62,7 @@ import ch.admin.foitt.wallet.platform.ssi.domain.repository.CredentialOfferRepos
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV2TrustStatement
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustRegistryError
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.usecase.ProcessIdentityTrustStatement
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import ch.admin.foitt.wallet.util.assertSuccessType
@@ -145,6 +146,9 @@ class FetchAndSaveCredentialImplTest {
     private lateinit var mockGetActorEnvironment: GetActorEnvironment
 
     @MockK
+    private lateinit var mockIsVeranaTrusted: IsVeranaTrusted
+
+    @MockK
     private lateinit var mockIssuerCredentialInfoJwt: Jwt
 
     @MockK
@@ -173,6 +177,7 @@ class FetchAndSaveCredentialImplTest {
             environmentSetupRepository = mockEnvironmentSetupRepository,
             generateDPoPKeyPair = mockGenerateDPoPKeyPair,
             getActorEnvironment = mockGetActorEnvironment,
+            isVeranaTrusted = mockIsVeranaTrusted,
         )
 
         setupDefaultMocks()
@@ -599,6 +604,21 @@ class FetchAndSaveCredentialImplTest {
     }
 
     @Test
+    fun `Issuer with EXTERNAL actor environment that Verana trusts returns Ok`() = runTest {
+        coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.EXTERNAL
+        coEvery { mockIsVeranaTrusted(ISSUER_DID) } returns true
+
+        useCase(oneIdentifierCredentialOffer).assertOk()
+    }
+
+    @Test
+    fun `Issuer in the Swiss registry never asks Verana`() = runTest {
+        useCase(oneIdentifierCredentialOffer).assertOk()
+
+        coVerify(exactly = 0) { mockIsVeranaTrusted(any()) }
+    }
+
+    @Test
     fun `Issuer with BETA actor environment returns Ok`() = runTest {
         coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.BETA
 
@@ -736,6 +756,7 @@ class FetchAndSaveCredentialImplTest {
         coEvery { mockGenerateDPoPKeyPair(any(), ISSUER_DID) } returns Ok(null)
 
         coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.PRODUCTION
+        coEvery { mockIsVeranaTrusted(any()) } returns false
 
         coEvery { mockAnyVerifiedCredential.vcSdJwtCredential } returns mockVcSdJwtCredential
     }

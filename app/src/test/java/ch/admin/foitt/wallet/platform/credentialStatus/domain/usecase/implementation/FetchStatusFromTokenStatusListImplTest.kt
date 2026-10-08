@@ -1,6 +1,8 @@
 package ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.implementation
 
 import ch.admin.foitt.didResolver.domain.DidResolverHelper
+import ch.admin.foitt.wallet.platform.actorEnvironment.domain.model.ActorEnvironment
+import ch.admin.foitt.wallet.platform.actorEnvironment.domain.usecase.GetActorEnvironment
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.CredentialStatusError
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusList
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.TokenStatusListProperties
@@ -11,6 +13,7 @@ import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.ParseToken
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.ValidateTokenStatusList
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialStatus
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -52,6 +55,12 @@ class FetchStatusFromTokenStatusListImplTest {
     @MockK
     private lateinit var mockTokenStatusListProperties: TokenStatusListProperties
 
+    @MockK
+    private lateinit var mockGetActorEnvironment: GetActorEnvironment
+
+    @MockK
+    private lateinit var mockIsVeranaTrusted: IsVeranaTrusted
+
     private lateinit var useCase: FetchStatusFromTokenStatusList
 
     @BeforeEach
@@ -64,6 +73,8 @@ class FetchStatusFromTokenStatusListImplTest {
             credentialStatusRepository = mockCredentialStatusRepository,
             validateTokenStatusList = mockValidateTokenStatusList,
             parseTokenStatusList = mockParseTokenStatusList,
+            getActorEnvironment = mockGetActorEnvironment,
+            isVeranaTrusted = mockIsVeranaTrusted,
         )
 
         setupDefaultMocks()
@@ -106,6 +117,33 @@ class FetchStatusFromTokenStatusListImplTest {
     @Test
     fun `Fetching token status with untrusted URI host returns error without fetching`(): Unit = runTest {
         every { mockTokenStatusListProperties.statusList.uri } returns UNTRUSTED_URI
+
+        useCase(CREDENTIAL_ISSUER, mockTokenStatusListProperties)
+            .assertErrorType(CredentialStatusError.UnknownRegistry::class)
+
+        coVerify(exactly = 0) {
+            mockCredentialStatusRepository.fetchTokenStatusListJwt(any())
+            mockIsVeranaTrusted(any())
+        }
+    }
+
+    @Test
+    fun `Fetching token status with untrusted URI host of an issuer Verana trusts fetches the status`(): Unit = runTest {
+        every { mockTokenStatusListProperties.statusList.uri } returns UNTRUSTED_URI
+        coEvery { mockGetActorEnvironment(CREDENTIAL_ISSUER) } returns ActorEnvironment.EXTERNAL
+        coEvery { mockIsVeranaTrusted(CREDENTIAL_ISSUER) } returns true
+        coEvery { mockCredentialStatusRepository.fetchTokenStatusListJwt(UNTRUSTED_URI) } returns Ok(JWT)
+        coEvery {
+            mockValidateTokenStatusList(CREDENTIAL_ISSUER, JWT, UNTRUSTED_URI)
+        } returns Ok(TokenStatusListResponse(statusList = mockStatusList))
+
+        assertEquals(CredentialStatus.VALID, useCase(CREDENTIAL_ISSUER, mockTokenStatusListProperties).assertOk())
+    }
+
+    @Test
+    fun `Fetching token status with untrusted URI host of an issuer Verana does not trust returns error`(): Unit = runTest {
+        every { mockTokenStatusListProperties.statusList.uri } returns UNTRUSTED_URI
+        coEvery { mockGetActorEnvironment(CREDENTIAL_ISSUER) } returns ActorEnvironment.EXTERNAL
 
         useCase(CREDENTIAL_ISSUER, mockTokenStatusListProperties)
             .assertErrorType(CredentialStatusError.UnknownRegistry::class)
@@ -172,6 +210,8 @@ class FetchStatusFromTokenStatusListImplTest {
             mockValidateTokenStatusList(CREDENTIAL_ISSUER, JWT, TRUSTED_URI)
         } returns Ok(TokenStatusListResponse(statusList = mockStatusList))
         coEvery { mockParseTokenStatusList(mockStatusList, INDEX) } returns Ok(0)
+        coEvery { mockGetActorEnvironment(any()) } returns ActorEnvironment.PRODUCTION
+        coEvery { mockIsVeranaTrusted(any()) } returns false
     }
 
     private companion object {

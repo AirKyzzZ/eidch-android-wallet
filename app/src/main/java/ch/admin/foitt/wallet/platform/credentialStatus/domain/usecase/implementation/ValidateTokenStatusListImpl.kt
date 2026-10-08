@@ -14,6 +14,7 @@ import ch.admin.foitt.wallet.platform.credentialStatus.domain.model.toValidateTo
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.ValidateTokenStatusList
 import ch.admin.foitt.wallet.platform.utils.JsonParsingError
 import ch.admin.foitt.wallet.platform.utils.SafeJson
+import ch.admin.foitt.wallet.platform.veranaTrust.domain.usecase.IsVeranaTrusted
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.coroutines.coroutineBinding
 import com.github.michaelbull.result.coroutines.runSuspendCatching
@@ -27,6 +28,7 @@ class ValidateTokenStatusListImpl @Inject constructor(
     private val getActorEnvironment: GetActorEnvironment,
     private val verifyJwtSignatureFromDid: VerifyJwtSignatureFromDid,
     private val safeJson: SafeJson,
+    private val isVeranaTrusted: IsVeranaTrusted,
 ) : ValidateTokenStatusList {
     override suspend fun invoke(
         credentialIssuer: String,
@@ -60,8 +62,9 @@ class ValidateTokenStatusListImpl @Inject constructor(
             }.bind()
 
         val actorEnvironment = getActorEnvironment(did)
+        val isRegisteredActor = actorEnvironment != ActorEnvironment.EXTERNAL || isVeranaTrusted(did)
         runSuspendCatching {
-            check(actorEnvironment != ActorEnvironment.EXTERNAL) { "actor is not in registries" }
+            check(isRegisteredActor) { "actor is not in registries" }
         }.mapError { throwable ->
             Timber.e(t = throwable, message = "status list not in swiyu registry")
             CredentialStatusError.UnknownRegistry
