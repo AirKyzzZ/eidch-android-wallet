@@ -1,6 +1,6 @@
 package ch.admin.foitt.wallet.platform.pushNotification.data
 
-import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.wallet.platform.appAttestation.di.ClientAttestationHttpClientModule.NAMED_CLIENT_ATTESTATION_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationPoP
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
@@ -34,7 +34,7 @@ import javax.inject.Inject
 import javax.inject.Named
 
 class PushNotificationRepositoryImpl @Inject constructor(
-    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
+    @param:Named(NAMED_CLIENT_ATTESTATION_HTTP_CLIENT) private val httpClient: HttpClient,
     private val environmentSetupRepo: EnvironmentSetupRepository,
 ) : PushNotificationRepository {
 

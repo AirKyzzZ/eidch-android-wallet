@@ -65,8 +65,8 @@ class GetCredentialIssuerDisplaysFlowImplTest {
 
         val expected = IssuerDisplay(
             issuerDisplay1.name,
-            issuerDisplay1.image,
-            issuerDisplay1.imageAltText,
+            issuerDisplay1.image?.image,
+            issuerDisplay1.entity.imageAltText,
             issuerDisplay1.locale,
         )
 

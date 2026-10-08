@@ -40,7 +40,7 @@ fun SettingsScreen(
         onFeedback = viewModel::onFeedback,
         onLicences = viewModel::onLicenses,
         onImprint = viewModel::onImprint,
-        onDevsSettings = viewModel.onDevsViewer,
+        devsSettingsEnabled = viewModel.devsSettingsEnabled,
         otpEnabled = viewModel.otpBypassValue.collectAsStateWithLifecycle(false).value,
         onLottie = viewModel.onLottieViewer,
         onChangeOtpBypass = viewModel::onChangeOtpBypass
@@ -58,7 +58,7 @@ private fun SettingsScreenContent(
     onLicences: () -> Unit,
     onImprint: () -> Unit,
     onChangeOtpBypass: () -> Unit,
-    onDevsSettings: Boolean,
+    devsSettingsEnabled: Boolean,
     onLottie: (() -> Unit)?,
 ) = Box(
     modifier = Modifier
@@ -73,6 +73,7 @@ private fun SettingsScreenContent(
             .horizontalSafeDrawing()
             .bottomSafeDrawing()
             .padding(
+                top = Sizes.s06,
                 bottom = Sizes.s04,
             )
     ) {
@@ -81,14 +82,17 @@ private fun SettingsScreenContent(
             onLanguage = onLanguage,
         )
         Spacer(modifier = Modifier.height(Sizes.s06))
-        GeneralSection(
+        FeedbackAndSupportSection(
             onHelp = onHelp,
             onFeedback = onFeedback,
+        )
+        Spacer(modifier = Modifier.height(Sizes.s06))
+        GeneralSection(
             onAccessibility = onAccessibility,
             onLicenses = onLicences,
             onImprint = onImprint,
         )
-        if (onDevsSettings) {
+        if (devsSettingsEnabled) {
             Spacer(modifier = Modifier.height(Sizes.s06))
             DevsSection(
                 otpEnabled = otpEnabled,
@@ -104,18 +108,38 @@ private fun WalletSection(
     onSecurityAndPrivacy: () -> Unit,
     onLanguage: () -> Unit,
 ) = SettingsSection(
-    title = stringResource(R.string.tk_settings_wallet_sectionTitle)
+    title = stringResource(R.string.settings_general_sectionTitle)
 ) {
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_wallet_securityPrivacy),
+        title = stringResource(R.string.settings_general_securityPrivacy_body),
         leadingIcon = R.drawable.wallet_ic_lock_small,
         onClick = onSecurityAndPrivacy,
     )
     WalletListItems.Divider()
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_wallet_language),
+        title = stringResource(R.string.settings_general_language_body),
         leadingIcon = R.drawable.wallet_ic_globe,
         onClick = onLanguage,
+    )
+}
+
+@Composable
+private fun FeedbackAndSupportSection(
+    onHelp: () -> Unit,
+    onFeedback: () -> Unit,
+) = SettingsSection(
+    title = stringResource(R.string.settings_help_sectionTitle)
+) {
+    WalletListItems.LinkSettingsItem(
+        title = stringResource(R.string.settings_help_contact_linkText),
+        leadingIcon = R.drawable.wallet_ic_questionmark,
+        onClick = onHelp,
+    )
+    WalletListItems.Divider()
+    WalletListItems.LinkSettingsItem(
+        title = stringResource(R.string.tk_settings_general_feedback_link_text),
+        leadingIcon = R.drawable.wallet_ic_feedback,
+        onClick = onFeedback,
     )
 }
 
@@ -145,40 +169,26 @@ private fun DevsSection(
 
 @Composable
 private fun GeneralSection(
-    onHelp: () -> Unit,
-    onFeedback: () -> Unit,
     onAccessibility: () -> Unit,
     onLicenses: () -> Unit,
     onImprint: () -> Unit,
 ) = SettingsSection(
-    title = stringResource(R.string.tk_settings_general_sectionTitle)
+    title = stringResource(R.string.settings_legal_sectionTitle)
 ) {
-    WalletListItems.LinkSettingsItem(
-        title = stringResource(R.string.tk_settings_general_help_link_text),
-        leadingIcon = R.drawable.wallet_ic_questionmark,
-        onClick = onHelp,
-    )
-    WalletListItems.Divider()
-    WalletListItems.LinkSettingsItem(
-        title = stringResource(R.string.tk_settings_general_feedback_link_text),
-        leadingIcon = R.drawable.wallet_ic_feedback,
-        onClick = onFeedback,
-    )
-    WalletListItems.Divider()
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_general_accessibility),
+        title = stringResource(R.string.settings_legal_accessibility_body),
         leadingIcon = R.drawable.wallet_ic_accessibility,
         onClick = onAccessibility,
     )
     WalletListItems.Divider()
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_general_licences),
+        title = stringResource(R.string.settings_legal_licences_body),
         leadingIcon = R.drawable.wallet_ic_licenses,
         onClick = onLicenses,
     )
     WalletListItems.Divider()
     WalletListItems.ClickableTextSettingsItem(
-        title = stringResource(R.string.tk_settings_general_imprint),
+        title = stringResource(R.string.settings_legal_legalNotice_body),
         leadingIcon = R.drawable.wallet_ic_info,
         onClick = onImprint,
     )
@@ -205,7 +215,7 @@ fun SettingsScreenPreview(
             onAccessibility = {},
             onLicences = {},
             onImprint = {},
-            onDevsSettings = true,
+            devsSettingsEnabled = true,
             otpEnabled = previewParams,
             onLottie = {},
             onChangeOtpBypass = {}

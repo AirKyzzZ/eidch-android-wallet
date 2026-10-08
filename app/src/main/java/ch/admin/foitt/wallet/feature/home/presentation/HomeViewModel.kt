@@ -3,18 +3,23 @@ package ch.admin.foitt.wallet.feature.home.presentation
 import android.content.Context
 import androidx.lifecycle.viewModelScope
 import ch.admin.foitt.wallet.R
+import ch.admin.foitt.wallet.feature.credentialDetail.domain.usecase.HasExhaustedBatchCopies
 import ch.admin.foitt.wallet.feature.home.domain.usecase.DeleteEIdRequestCase
 import ch.admin.foitt.wallet.feature.home.domain.usecase.EIdRequestsPriorityOrdering
 import ch.admin.foitt.wallet.feature.home.domain.usecase.GetEIdRequestsFlow
 import ch.admin.foitt.wallet.feature.home.presentation.model.HomeContainerState
 import ch.admin.foitt.wallet.feature.home.presentation.model.HomeScreenState
 import ch.admin.foitt.wallet.feature.otp.domain.repository.OtpStateCompletionRepository
+import ch.admin.foitt.wallet.platform.batch.domain.usecase.RefreshBatchCredentials
 import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.domain.model.DeferredCredentialDisplayData
+import ch.admin.foitt.wallet.platform.credential.domain.repository.CredentialRefreshRepository
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.RefreshDeferredCredentials
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
+import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialComparator
 import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateAllCredentialStatuses
+import ch.admin.foitt.wallet.platform.credentialStatus.domain.usecase.UpdateCachedImages
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredProgressionState
 import ch.admin.foitt.wallet.platform.database.domain.model.VerifiableProgressionState
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRequestDisplayData
@@ -23,8 +28,8 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.PollS
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.usecase.UpdateAllSIdStatuses
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
 import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
-import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialOfferEvent
-import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialOfferEventRepository
+import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialEvent
+import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
@@ -48,7 +53,9 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.time.Instant
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 @Suppress("TooManyFunctions")
@@ -58,13 +65,17 @@ class HomeViewModel @Inject constructor(
     getDeferredCredentialsWithDetailsFlow: GetDeferredCredentialsWithDetailsFlow,
     getEIdRequestsFlow: GetEIdRequestsFlow,
     private val getCredentialCardState: GetCredentialCardState,
+    private val hasExhaustedBatchCopies: HasExhaustedBatchCopies,
     private val updateAllCredentialStatuses: UpdateAllCredentialStatuses,
+    private val updateCachedImages: UpdateCachedImages,
     private val updateAllSIdStatuses: UpdateAllSIdStatuses,
     private val refreshDeferredCredentials: RefreshDeferredCredentials,
+    private val refreshBatchCredentials: RefreshBatchCredentials,
+    private val credentialRefreshRepository: CredentialRefreshRepository,
     private val deleteEIdRequestCase: DeleteEIdRequestCase,
     private val environmentSetupRepository: EnvironmentSetupRepository,
     private val navManager: NavigationManager,
-    private val credentialOfferEventRepository: CredentialOfferEventRepository,
+    private val credentialEventRepository: CredentialEventRepository,
     private val otpStateCompletionRepository: OtpStateCompletionRepository,
     private val eIdRequestsPriorityOrdering: EIdRequestsPriorityOrdering,
     private val pollSIdRequestAfterFileSubmit: PollSIdRequestAfterFileSubmit,
@@ -80,6 +91,12 @@ class HomeViewModel @Inject constructor(
 
     private var pollingJob: Job? = null
 
+    private var statusRefreshJob: Job? = null
+
+    private var cachedImagesRefreshJob: Job? = null
+
+    private var lastCachedImagesRefresh: Long = 0L // epoch seconds
+
     @OptIn(UnsafeResultValueAccess::class)
     val screenContentState = refreshableStateFlow(initialData = HomeScreenState.Initial) {
         combine(
@@ -88,7 +105,7 @@ class HomeViewModel @Inject constructor(
             getDeferredCredentialsWithDetailsFlow(),
         ) { eIdRequestsFlow, credentialsWithDetails, deferredCredential ->
             when {
-                credentialsWithDetails.isOk && eIdRequestsFlow.isOk && deferredCredential.isOk -> mapToUiState(
+                eIdRequestsFlow.isOk && credentialsWithDetails.isOk && deferredCredential.isOk -> mapToUiState(
                     credentials = credentialsWithDetails.value,
                     deferredCredentials = deferredCredential.value,
                     eIdRequestCases = eIdRequestsFlow.value,
@@ -136,24 +153,25 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            credentialOfferEventRepository.event.collect { event ->
+            credentialEventRepository.event.collect { event ->
                 _eventMessage.value = when (event) {
-                    CredentialOfferEvent.ACCEPTED -> R.string.tk_home_notification_credential_accepted
-                    CredentialOfferEvent.DECLINED -> R.string.tk_home_notification_credential_declined
-                    CredentialOfferEvent.NONE -> null
+                    CredentialEvent.ACCEPTED -> R.string.tk_home_notification_credential_accepted
+                    CredentialEvent.DECLINED -> R.string.tk_home_notification_credential_declined
+                    CredentialEvent.DELETED -> R.string.tk_home_notification_credential_deleted
+                    CredentialEvent.NONE -> null
                 }
-                if (_eventMessage.value != null) {
-                    delay(TOAST_DISPLAY_TIME_MILLIS)
-                    credentialOfferEventRepository.resetEvent()
+                if (eventMessage.value != null) {
+                    delay(TOAST_DISPLAY_TIME_MILLIS.milliseconds)
+                    credentialEventRepository.resetEvent()
                 }
             }
         }
     }
 
     private suspend fun mapToUiState(
+        eIdRequestCases: List<SIdRequestDisplayData>,
         credentials: List<CredentialDisplayData>,
         deferredCredentials: List<DeferredCredentialDisplayData>,
-        eIdRequestCases: List<SIdRequestDisplayData>
     ): HomeScreenState {
         val orderedEIdRequests = eIdRequestsPriorityOrdering(eIdRequestCases)
 
@@ -181,40 +199,45 @@ class HomeViewModel @Inject constructor(
         credentialsDisplayData: List<CredentialDisplayData>,
         deferredCredentialsDisplayData: List<DeferredCredentialDisplayData>,
     ): List<CredentialCardState> {
-        val deferredCredentials = deferredCredentialsDisplayData
-            .sortedWith { first, second ->
-                when (first.status) {
-                    second.status -> {
-                        when {
-                            first.credentialId > second.credentialId -> -1
-                            first.credentialId < second.credentialId -> 1
-                            else -> 0
-                        }
-                    }
+        val groupOrder = mapOf(
+            VerifiableProgressionState.UNACCEPTED to 0,
+            VerifiableProgressionState.ACCEPTED to 1,
+            DeferredProgressionState.IN_PROGRESS to 2,
+            DeferredProgressionState.INVALID to 3,
+            DeferredProgressionState.FAILED to 4,
+        )
 
-                    DeferredProgressionState.IN_PROGRESS -> -1
-                    DeferredProgressionState.INVALID -> 1
-                    DeferredProgressionState.FAILED -> 2
-                }
-            }
-            .map { deferredCredentialDisplayData ->
-                getCredentialCardState(deferredCredentialDisplayData)
-            }
+        val credentials = credentialsDisplayData.map { credentialDisplayData ->
+            CredentialComparator(
+                state = getCredentialCardState(credentialDisplayData).copy(
+                    showBatchWarning = hasExhaustedBatchCopies(credentialDisplayData.credentialId),
+                ),
+                groupOrder = groupOrder.getValue(credentialDisplayData.progressionState),
+                createdAt = credentialDisplayData.createdAt,
+            )
+        }
 
-        val (unacceptedCredentials, acceptedCredential) = credentialsDisplayData
-            .map { credentialDisplayData ->
-                getCredentialCardState(credentialDisplayData)
-            }.partition {
-                it.isUnaccepted
-            }
+        val deferredCredentials = deferredCredentialsDisplayData.map { deferredCredentialDisplayData ->
+            CredentialComparator(
+                state = getCredentialCardState(deferredCredentialDisplayData),
+                groupOrder = groupOrder.getValue(deferredCredentialDisplayData.status),
+                createdAt = deferredCredentialDisplayData.createdAt,
+            )
+        }
 
-        return unacceptedCredentials + deferredCredentials + acceptedCredential
+        return (credentials + deferredCredentials)
+            .sortedWith(
+                compareBy<CredentialComparator> { it.groupOrder }
+                    .thenByDescending { it.createdAt }
+            ).map { it.state }
     }
 
     fun onResume() {
         if (environmentSetupRepository.eIdRequestEnabled) {
             tryLaunchEidPolling()
         }
+        tryRefreshCredentialStatuses()
+        tryRefreshCachedImages()
     }
 
     fun onPause() {
@@ -222,12 +245,56 @@ class HomeViewModel @Inject constructor(
         pollingJob = null
     }
 
+    // Pull-to-refresh always refreshes (ignores the shared cooldown); only skipped if one is already running.
     fun onRefresh() {
+        if (isRefreshing.value) return
+        credentialRefreshRepository.markRefreshed()
         viewModelScope.launch {
             refreshDeferredCredentials()
+            tryRefreshBatchCredentials()
             updateAllSIdStatuses()
             updateAllCredentialStatuses()
         }.trackCompletion(_isRefreshing)
+    }
+
+    private fun tryRefreshCredentialStatuses() {
+        if (statusRefreshJob != null) return
+        if (!credentialRefreshRepository.isRefreshDue()) return
+        credentialRefreshRepository.markRefreshed()
+        statusRefreshJob = viewModelScope.launch {
+            refreshDeferredCredentials()
+            tryRefreshBatchCredentials()
+            updateAllCredentialStatuses()
+        }.apply {
+            invokeOnCompletion {
+                if (statusRefreshJob == this) statusRefreshJob = null
+            }
+        }
+    }
+
+    /**
+     * Backfills the cached display images.
+     * The cooldown keeps credentials whose metadata has no fetchable
+     * logo from re-parsing their raw metadata on every resume.
+     */
+    private fun tryRefreshCachedImages() {
+        if (cachedImagesRefreshJob != null) return
+        val now = Instant.now().epochSecond
+        if (now - lastCachedImagesRefresh < CACHED_IMAGES_REFRESH_COOLDOWN_SECONDS) return
+        lastCachedImagesRefresh = now
+        cachedImagesRefreshJob = viewModelScope.launch {
+            updateCachedImages()
+        }.apply {
+            invokeOnCompletion {
+                if (cachedImagesRefreshJob == this) cachedImagesRefreshJob = null
+            }
+        }
+    }
+
+    // Refreshes the batch credentials running low on copies. Skips itself when one is already running.
+    private suspend fun tryRefreshBatchCredentials() {
+        if (!environmentSetupRepository.batchIssuanceEnabled) return
+        refreshBatchCredentials()
     }
 
     private fun onRefreshSIdStatuses() {
@@ -254,7 +321,7 @@ class HomeViewModel @Inject constructor(
 
     fun onCloseToast() {
         _eventMessage.value = null
-        credentialOfferEventRepository.resetEvent()
+        credentialEventRepository.resetEvent()
     }
 
     fun onEidNotificationAction(caseId: String, status: SIdRequestDisplayStatus) {
@@ -325,10 +392,11 @@ class HomeViewModel @Inject constructor(
     fun onHelp() {
         // hide menu on navigation, so when coming back it is closed
         onMenu(false)
-        appContext.openLink(R.string.tk_settings_general_help_link_value)
+        appContext.openLink(R.string.settings_help_contact_linkValue)
     }
 
     companion object {
         private const val TOAST_DISPLAY_TIME_MILLIS = 4000L
+        private const val CACHED_IMAGES_REFRESH_COOLDOWN_SECONDS = 5 * 60L
     }
 }

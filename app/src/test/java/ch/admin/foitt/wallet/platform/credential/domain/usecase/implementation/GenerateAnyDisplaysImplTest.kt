@@ -12,14 +12,13 @@ import ch.admin.foitt.wallet.platform.credential.domain.model.CredentialError
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateAnyDisplays
 import ch.admin.foitt.wallet.platform.credential.domain.usecase.GenerateMetadataDisplays
 import ch.admin.foitt.wallet.platform.database.domain.model.Cluster
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedCredentialInformationDisplay
 import ch.admin.foitt.wallet.platform.oca.domain.model.MetaDisplays
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaBundle
 import ch.admin.foitt.wallet.platform.oca.domain.model.OcaError
 import ch.admin.foitt.wallet.platform.oca.domain.usecase.GenerateOcaDisplays
-import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV1TrustStatement
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.IdentityV2TrustStatement
 import ch.admin.foitt.wallet.util.assertErrorType
 import ch.admin.foitt.wallet.util.assertOk
 import com.github.michaelbull.result.Err
@@ -58,7 +57,7 @@ class GenerateAnyDisplaysImplTest {
     private lateinit var mockIssuerInfo: IssuerCredentialInfo
 
     @MockK
-    private lateinit var mockTrustStatement: IdentityV1TrustStatement
+    private lateinit var mockTrustStatement: IdentityV2TrustStatement
 
     @MockK
     private lateinit var mockCredentialConfiguration: VcSdJwtCredentialConfiguration
@@ -93,7 +92,7 @@ class GenerateAnyDisplaysImplTest {
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = LANGUAGE_EN, name = TRUST_ISSUER_NAME_EN, logo = METADATA_LOGO_URI),
             AnyIssuerDisplay(locale = LANGUAGE_FR, name = TRUST_ISSUER_NAME_FR),
-            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
+            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = null)
         )
 
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)
@@ -107,7 +106,7 @@ class GenerateAnyDisplaysImplTest {
 
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = LANGUAGE_EN, name = METADATA_ISSUER_NAME_EN, logo = METADATA_LOGO_URI),
-            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
+            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = null)
         )
 
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)
@@ -120,7 +119,7 @@ class GenerateAnyDisplaysImplTest {
         val result = useCase(mockAnyCredential, mockIssuerInfo, null, mockCredentialConfiguration, mockOcaBundle).assertOk()
 
         val expectedIssuerDisplays = listOf(
-            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
+            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = null)
         )
 
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)
@@ -133,7 +132,7 @@ class GenerateAnyDisplaysImplTest {
         val expectedIssuerDisplays = listOf(
             AnyIssuerDisplay(locale = LANGUAGE_EN, name = TRUST_ISSUER_NAME_EN, logo = METADATA_LOGO_URI),
             AnyIssuerDisplay(locale = LANGUAGE_FR, name = TRUST_ISSUER_NAME_FR),
-            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = DisplayConst.ISSUER_FALLBACK_NAME)
+            AnyIssuerDisplay(locale = DisplayLanguage.FALLBACK, name = null)
         )
 
         assertEquals(expectedIssuerDisplays, result.issuerDisplays)

@@ -45,6 +45,7 @@ internal class CreateJWSKeyPairInHardwareImpl @Inject constructor(
         provider: String,
         keyStorageSecurityLevels: List<KeyStorageSecurityLevel>?,
         attestationChallenge: ByteArray?,
+        purposes: Int,
     ): Result<JWSKeyPair, CreateJWSKeyPairError> = withContext(defaultDispatcher) {
         coroutineBinding {
             val keyId = getKeyId(provider, keyAlias)
@@ -58,6 +59,7 @@ internal class CreateJWSKeyPairInHardwareImpl @Inject constructor(
                 provider = provider,
                 keyStorageSecurityLevels = keyStorageSecurityLevels,
                 attestationChallenge = attestationChallenge,
+                purposes = purposes,
             ).bind()
 
             JWSKeyPair(
@@ -104,6 +106,7 @@ internal class CreateJWSKeyPairInHardwareImpl @Inject constructor(
         provider: String,
         keyStorageSecurityLevels: List<KeyStorageSecurityLevel>?,
         attestationChallenge: ByteArray?,
+        purposes: Int,
     ): Result<KeyPair, CreateJWSKeyPairError> = binding {
         val useStrongBox = useStrongBox(keyStorageSecurityLevels).bind()
         val spec = createKeyGenSpec(
@@ -111,6 +114,7 @@ internal class CreateJWSKeyPairInHardwareImpl @Inject constructor(
             signingAlgorithm = signingAlgorithm,
             useStrongBox = useStrongBox,
             attestationChallenge = attestationChallenge,
+            purposes = purposes,
         ).mapError(CreateKeyGenSpecError::toCreateJWSKeyPairError)
             .bind()
 

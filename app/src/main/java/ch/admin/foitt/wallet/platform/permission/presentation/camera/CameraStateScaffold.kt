@@ -36,18 +36,17 @@ fun CameraStateScaffold(
         permissions = listOf(
             Manifest.permission.CAMERA,
         ),
-        permissionRationaleContent = { onHandled ->
-            updateContentShown(false)
-            CameraPermissionRationalScreenContent {
-                context.openAppDetailsSettings()
-                onHandled()
-            }
-        },
         permissionNotGrantedContent = { handler ->
             updateContentShown(false)
             CameraPermissionNotGrantedScreenContent {
                 handler.requestPermission()
             }
+        },
+        permissionRationaleContent = {
+            updateContentShown(false)
+            CameraPermissionRationalScreenContent(
+                onOpenSettings = { context.openAppDetailsSettings() }
+            )
         },
         permissionGrantedContent = {
             updateContentShown(true)

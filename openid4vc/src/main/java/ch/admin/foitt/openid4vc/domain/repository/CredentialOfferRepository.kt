@@ -1,7 +1,6 @@
 package ch.admin.foitt.openid4vc.domain.repository
 
 import androidx.annotation.CheckResult
-import ch.admin.foitt.openid4vc.domain.model.CredentialRequestType
 import ch.admin.foitt.openid4vc.domain.model.TokenType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchAccessTokenError
@@ -13,9 +12,8 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.FetchVerifiableCred
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.IssuerNonce
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.TokenResponse
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerConfigurationResponse
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.IssuerCredentialInfo
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.RawAndParsedIssuerCredentialInfo
-import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
+import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryption
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.FetchJwtVcIssuerMetadataError
 import ch.admin.foitt.openid4vc.domain.model.vcSdJwt.JwtVcIssuerMetadata
 import com.github.michaelbull.result.Result
@@ -26,12 +24,8 @@ interface CredentialOfferRepository {
     @CheckResult
     suspend fun fetchRawAndParsedIssuerCredentialInformation(
         issuerEndpoint: URL,
+        forceRefresh: Boolean = false,
     ): Result<RawAndParsedIssuerCredentialInfo, FetchIssuerCredentialInfoError>
-
-    @CheckResult
-    suspend fun getIssuerCredentialInfo(
-        issuerEndpoint: URL
-    ): Result<IssuerCredentialInfo, FetchIssuerCredentialInfoError>
 
     @CheckResult
     suspend fun fetchJwtVcIssuerMetadata(
@@ -66,8 +60,8 @@ interface CredentialOfferRepository {
     suspend fun fetchCredential(
         issuerEndpoint: URL,
         tokenResponse: TokenResponse,
-        credentialRequestType: CredentialRequestType,
-        payloadEncryptionType: PayloadEncryptionType,
+        request: String,
+        payloadEncryption: PayloadEncryption,
         dpopProof: String? = null,
     ): Result<CredentialResponse, FetchVerifiableCredentialError>
 
@@ -75,8 +69,8 @@ interface CredentialOfferRepository {
         issuerEndpoint: String,
         accessToken: String,
         tokenType: TokenType,
-        credentialRequestType: CredentialRequestType,
-        payloadEncryptionType: PayloadEncryptionType,
+        request: String,
+        payloadEncryption: PayloadEncryption,
         dpopProof: String? = null,
     ): Result<CredentialResponse, FetchDeferredCredentialError>
 }

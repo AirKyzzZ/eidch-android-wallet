@@ -1,6 +1,6 @@
 package ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation
 
-import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.OidIssuerDisplay
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialInformationDisplay
 import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.locale.LocaleCompat
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetCurrentAppLocale
@@ -12,10 +12,10 @@ class GetLocalizedCredentialInformationDisplayImpl @Inject constructor(
     private val getCurrentAppLocale: GetCurrentAppLocale
 ) : GetLocalizedCredentialInformationDisplay {
 
-    override fun invoke(
-        displays: List<OidIssuerDisplay>,
+    override fun <T : CredentialInformationDisplay> invoke(
+        displays: List<T>,
         preferredLocaleString: String?,
-    ): OidIssuerDisplay? {
+    ): T? {
         val appLocale = getCurrentAppLocale()
 
         val preferredLocale = preferredLocaleString?.let {
@@ -41,7 +41,7 @@ class GetLocalizedCredentialInformationDisplayImpl @Inject constructor(
      * Display with "fr-CH" -> return this perfect match
      * No display with "fr-CH" -> null
      */
-    private fun List<OidIssuerDisplay>.getWithLanguageAndCountry(
+    private fun <T : CredentialInformationDisplay> List<T>.getWithLanguageAndCountry(
         preferredLocale: Locale,
     ) = firstOrNull { display ->
         display.locale?.let {
@@ -55,7 +55,7 @@ class GetLocalizedCredentialInformationDisplayImpl @Inject constructor(
      * Display with "fr-(anyCountry)" -> return this match
      * No display with "fr-(anyCountry)" -> null
      */
-    private fun List<OidIssuerDisplay>.getWithLanguageAndDifferentCountry(
+    private fun <T : CredentialInformationDisplay> List<T>.getWithLanguageAndDifferentCountry(
         preferredLocale: Locale,
     ) = firstOrNull { display ->
         display.locale?.let {
@@ -70,7 +70,7 @@ class GetLocalizedCredentialInformationDisplayImpl @Inject constructor(
      * Display with "fr" -> return this match
      * No display with "fr" -> null
      */
-    private fun List<OidIssuerDisplay>.getWithLanguage(
+    private fun <T : CredentialInformationDisplay> List<T>.getWithLanguage(
         preferredLocale: Locale,
     ) = firstOrNull { display ->
         display.locale?.let {
@@ -85,7 +85,7 @@ class GetLocalizedCredentialInformationDisplayImpl @Inject constructor(
      * Display with "de" -> return this match
      * No display with match in prio list -> null
      */
-    private fun List<OidIssuerDisplay>.getWithDefault(): OidIssuerDisplay? {
+    private fun <T : CredentialInformationDisplay> List<T>.getWithDefault(): T? {
         // Create a map of preferred languages
         // The map value indicates the preference order (lower index => higher priority)
         val prioritizedLocales: Map<Locale, Int> = DisplayLanguage.PRIORITIES

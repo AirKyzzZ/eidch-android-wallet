@@ -1,7 +1,7 @@
 package ch.admin.foitt.wallet.platform.eIdApplicationProcess.data.repository
 
 import android.content.Context
-import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
+import ch.admin.foitt.wallet.platform.appAttestation.di.ClientAttestationHttpClientModule.NAMED_CLIENT_ATTESTATION_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationPoP
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.KeyAttestation
@@ -12,7 +12,6 @@ import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.CaseRes
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdPeerPushIdRequest
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.EIdStartAutoVerificationType
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.GuardianVerificationResponse
-import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.PairWalletResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdChallengeResponse
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.SIdRepositoryError
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.StateResponse
@@ -35,13 +34,15 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import javax.inject.Inject
 import javax.inject.Named
 
+@Suppress("TooManyFunctions")
 class SIdRepositoryImpl @Inject constructor(
-    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
+    @param:Named(NAMED_CLIENT_ATTESTATION_HTTP_CLIENT) private val httpClient: HttpClient,
     private val environmentSetupRepo: EnvironmentSetupRepository,
     @param:ApplicationContext private val appContext: Context,
 ) : SIdRepository {
@@ -129,11 +130,13 @@ class SIdRepositoryImpl @Inject constructor(
         caseId: String,
         clientAttestation: ClientAttestation,
         clientAttestationPoP: ClientAttestationPoP,
-    ) = runSuspendCatching<PairWalletResponse> {
-        httpClient.put(environmentSetupRepo.sidBackendUrl + REST_API + "eid/$caseId/pair-wallet") {
+    ) = runSuspendCatching<String> {
+        httpClient.put(
+            environmentSetupRepo.sidBackendUrl + REST_API + "eid/$caseId/pair-wallet/v2"
+        ) {
             header(ClientAttestation.REQUEST_HEADER, clientAttestation.attestation.rawJwt)
             header(ClientAttestationPoP.REQUEST_HEADER, clientAttestationPoP.value)
-        }.body()
+        }.bodyAsText()
     }.mapError { error ->
         error.toPairWalletError()
     }
@@ -190,6 +193,19 @@ class SIdRepositoryImpl @Inject constructor(
             setBody(request)
         }.body()
     }.mapError { it.toSIdRepositoryError("Set peer pushId failed") }
+
+    override suspend fun abortSIdProcess(
+        caseId: String,
+        clientAttestation: ClientAttestation,
+        clientAttestationPoP: ClientAttestationPoP,
+    ) = runSuspendCatching<Unit> {
+        httpClient.put(
+            environmentSetupRepo.sidBackendUrl + REST_API + "eid/$caseId/abort"
+        ) {
+            header(ClientAttestation.REQUEST_HEADER, clientAttestation.attestation.rawJwt)
+            header(ClientAttestationPoP.REQUEST_HEADER, clientAttestationPoP.value)
+        }.body()
+    }.mapError { it.toSIdRepositoryError("Abort SId process failed") }
 
     companion object {
         private const val REST_API = "api/rest/"

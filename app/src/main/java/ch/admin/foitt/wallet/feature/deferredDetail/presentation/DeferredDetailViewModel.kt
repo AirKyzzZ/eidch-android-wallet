@@ -8,15 +8,14 @@ import ch.admin.foitt.wallet.feature.credentialDetail.presentation.composables.V
 import ch.admin.foitt.wallet.feature.deferredDetail.presentation.model.DeferredDetailUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
-import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromUri
+import ch.admin.foitt.wallet.platform.composables.presentation.adapter.GetDrawableFromImageData
 import ch.admin.foitt.wallet.platform.credential.domain.model.DeferredCredentialDisplayData
 import ch.admin.foitt.wallet.platform.credential.presentation.adapter.GetCredentialCardState
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayConst
-import ch.admin.foitt.wallet.platform.database.domain.model.DisplayLanguage
 import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
+import ch.admin.foitt.wallet.platform.messageEvents.domain.model.CredentialEvent
+import ch.admin.foitt.wallet.platform.messageEvents.domain.repository.CredentialEventRepository
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
 import ch.admin.foitt.wallet.platform.navigation.domain.model.Destination
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarAction
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarBackground
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
@@ -26,12 +25,14 @@ import ch.admin.foitt.wallet.platform.scaffold.presentation.ScreenViewModel
 import ch.admin.foitt.wallet.platform.ssi.domain.model.SsiError
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.DeleteDeferred
 import ch.admin.foitt.wallet.platform.ssi.domain.usecase.GetDeferredCredentialWithDetailFlow
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import ch.admin.foitt.wallet.platform.utils.UiString
 import ch.admin.foitt.wallet.platform.utils.toPainter
 import com.github.michaelbull.result.get
-import com.github.michaelbull.result.onFailure
+import com.github.michaelbull.result.onErr
+import com.github.michaelbull.result.onOk
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -49,9 +50,10 @@ class DeferredDetailViewModel @AssistedInject constructor(
     getDeferredCredentialDetailFlow: GetDeferredCredentialWithDetailFlow,
     getCredentialIssuerDisplaysFlow: GetCredentialIssuerDisplaysFlow,
     private val getCredentialCardState: GetCredentialCardState,
-    private val getDrawableFromUri: GetDrawableFromUri,
     private val navManager: NavigationManager,
     private val deleteDeferred: DeleteDeferred,
+    private val credentialEventRepository: CredentialEventRepository,
+    private val getDrawableFromImageData: GetDrawableFromImageData,
     setTopBarState: SetTopBarState,
     @Assisted private val credentialId: Long
 ) : ScreenViewModel(setTopBarState) {
@@ -154,12 +156,15 @@ class DeferredDetailViewModel @AssistedInject constructor(
         isDeleting = true
         _visibleBottomSheet.value = VisibleBottomSheet.NONE
         viewModelScope.launch {
-            deleteDeferred(credentialId).onFailure { error ->
-                isDeleting = false
-                when (error) {
-                    is SsiError.Unexpected -> Timber.e(error.cause)
+            deleteDeferred(credentialId)
+                .onOk {
+                    credentialEventRepository.setEvent(CredentialEvent.DELETED)
+                }.onErr { error ->
+                    isDeleting = false
+                    when (error) {
+                        is SsiError.Unexpected -> Timber.e(error.cause)
+                    }
                 }
-            }
             navManager.popBackStackTo(Destination.HomeScreen::class, false)
         }
     }
@@ -174,14 +179,8 @@ class DeferredDetailViewModel @AssistedInject constructor(
 
     private suspend fun IssuerDisplay?.toActorUiState() = this?.let {
         ActorUiState(
-            name = if (locale == DisplayLanguage.FALLBACK) {
-                null
-            } else if (name == DisplayConst.ISSUER_FALLBACK_NAME) {
-                null
-            } else {
-                name
-            },
-            painter = getDrawableFromUri(image)?.toPainter(),
+            name = name,
+            painter = getDrawableFromImageData(image)?.toPainter(),
             trustStatus = TrustStatus.UNKNOWN,
             vcSchemaTrustStatus = VcSchemaTrustStatus.UNPROTECTED,
             actorType = ActorType.ISSUER,

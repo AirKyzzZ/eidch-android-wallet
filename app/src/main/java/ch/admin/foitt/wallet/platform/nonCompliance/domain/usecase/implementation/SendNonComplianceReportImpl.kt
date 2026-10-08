@@ -11,6 +11,7 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.model.RequestClientA
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.GenerateProofOfPossession
 import ch.admin.foitt.wallet.platform.appAttestation.domain.usecase.RequestClientAttestation
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
+import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetCurrentAppLocale
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceError
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceMetadata
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportReason
@@ -46,6 +47,7 @@ class SendNonComplianceReportImpl @Inject constructor(
     private val safeJson: SafeJson,
     private val generateProofOfPossession: GenerateProofOfPossession,
     private val environmentSetupRepository: EnvironmentSetupRepository,
+    private val getCurrentAppLocale: GetCurrentAppLocale,
 ) : SendNonComplianceReport {
     override suspend fun invoke(
         activityId: Long,
@@ -61,14 +63,14 @@ class SendNonComplianceReportImpl @Inject constructor(
             .mapError(VerifiableCredentialRepositoryError::toSendNonComplianceReportError)
             .bind()
 
-        val presentationRequest = getPresentationRequest(activity.nonComplianceData).bind()
+        val authorizationRequest = getAuthorizationRequest(activity.nonComplianceData).bind()
         val createdAt = Instant.ofEpochSecond(activity.createdAt)
         val formattedCreatedAt = DateTimeFormatter.ISO_INSTANT.format(createdAt)
-        val presentationRequestFields = getPresentationRequestFields(presentationRequest)
+        val presentationRequestFields = getPresentationRequestFields(authorizationRequest)
 
         val nonComplianceMetadata = NonComplianceMetadata(
-            verifierDid = presentationRequest.clientId,
-            verifierUrl = presentationRequest.responseUri,
+            verifierDid = authorizationRequest.clientIdentifier.clientId,
+            verifierUrl = authorizationRequest.responseUri,
             presentationActionCreatedAt = formattedCreatedAt,
             presentedCredentialIssuerDid = credential.issuer,
             presentationRequestJwt = activity.nonComplianceData,
@@ -79,6 +81,7 @@ class SendNonComplianceReportImpl @Inject constructor(
             type = reportReason.type,
             description = description,
             email = email,
+            language = getCurrentAppLocale().language,
             metadata = nonComplianceMetadata
         )
 
@@ -110,7 +113,7 @@ class SendNonComplianceReportImpl @Inject constructor(
             .bind()
     }
 
-    private fun getPresentationRequest(nonComplianceData: String?): Result<AuthorizationRequest, SendNonComplianceReportError> = binding {
+    private fun getAuthorizationRequest(nonComplianceData: String?): Result<AuthorizationRequest, SendNonComplianceReportError> = binding {
         if (nonComplianceData == null) {
             return@binding Err(
                 NonComplianceError.Unexpected(IllegalStateException("nonComplianceData must not be null"))

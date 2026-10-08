@@ -31,6 +31,6 @@ class CredentialDisplayDaoTest {
 
     @Test(expected = SQLiteConstraintException::class)
     fun insertWithoutMatchingForeignKeyShouldThrow() {
-        credentialDisplayDao.insertAll(listOf(credentialDisplay1))
+        credentialDisplayDao.insertAll(listOf(credentialDisplay1.entity))
     }
 }

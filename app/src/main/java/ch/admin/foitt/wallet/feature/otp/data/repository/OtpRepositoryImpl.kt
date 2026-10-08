@@ -1,11 +1,11 @@
 package ch.admin.foitt.wallet.feature.otp.data.repository
 
-import ch.admin.foitt.openid4vc.di.OpenId4VcModule.Companion.NAMED_DEFAULT_HTTP_CLIENT
 import ch.admin.foitt.wallet.feature.otp.domain.model.OtpRequest
 import ch.admin.foitt.wallet.feature.otp.domain.model.OtpVerify
 import ch.admin.foitt.wallet.feature.otp.domain.model.RequestOtpError
 import ch.admin.foitt.wallet.feature.otp.domain.model.toRequestOtpError
 import ch.admin.foitt.wallet.feature.otp.domain.repository.OtpRepository
+import ch.admin.foitt.wallet.platform.appAttestation.di.ClientAttestationHttpClientModule.NAMED_CLIENT_ATTESTATION_HTTP_CLIENT
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestation
 import ch.admin.foitt.wallet.platform.appAttestation.domain.model.ClientAttestationPoP
 import ch.admin.foitt.wallet.platform.environmentSetup.domain.repository.EnvironmentSetupRepository
@@ -25,7 +25,7 @@ import javax.inject.Inject
 import javax.inject.Named
 
 class OtpRepositoryImpl @Inject constructor(
-    @param:Named(NAMED_DEFAULT_HTTP_CLIENT) private val httpClient: HttpClient,
+    @param:Named(NAMED_CLIENT_ATTESTATION_HTTP_CLIENT) private val httpClient: HttpClient,
     private val environmentSetupRepo: EnvironmentSetupRepository,
     private val getCurrentAppLocale: GetCurrentAppLocale,
 ) : OtpRepository {
@@ -35,7 +35,7 @@ class OtpRepositoryImpl @Inject constructor(
         clientAttestationPoP: ClientAttestationPoP,
         otpRequest: OtpRequest,
     ): Result<Unit, RequestOtpError> = runSuspendCatching<Unit> {
-        httpClient.post(environmentSetupRepo.attestationsServiceUrl + "/otp/request") {
+        httpClient.post(environmentSetupRepo.defaultAttestationServiceUrl + "/otp/request") {
             header(ClientAttestation.REQUEST_HEADER, clientAttestation.attestation.rawJwt)
             header(ClientAttestationPoP.REQUEST_HEADER, clientAttestationPoP.value)
             header(HttpHeaders.AcceptLanguage, getCurrentAppLocale())
@@ -51,7 +51,7 @@ class OtpRepositoryImpl @Inject constructor(
         clientAttestationPoP: ClientAttestationPoP,
         otpVerify: OtpVerify,
     ): Result<Unit, RequestOtpError> = runSuspendCatching<Unit> {
-        httpClient.post(environmentSetupRepo.attestationsServiceUrl + "/otp/verify") {
+        httpClient.post(environmentSetupRepo.defaultAttestationServiceUrl + "/otp/verify") {
             header(ClientAttestation.REQUEST_HEADER, clientAttestation.attestation.rawJwt)
             header(ClientAttestationPoP.REQUEST_HEADER, clientAttestationPoP.value)
             contentType(ContentType.Application.Json)

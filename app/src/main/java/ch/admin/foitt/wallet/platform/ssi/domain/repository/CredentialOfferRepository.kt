@@ -65,4 +65,6 @@ interface CredentialOfferRepository {
         clusters: List<Cluster>,
         rawCredentialData: RawCredentialData,
     ): Result<Long, CredentialOfferRepositoryError>
+
+    suspend fun refreshCachedImages(credentialId: Long): Result<Unit, Throwable>
 }

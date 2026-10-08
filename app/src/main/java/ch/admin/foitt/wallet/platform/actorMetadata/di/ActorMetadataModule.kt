@@ -5,12 +5,16 @@ import ch.admin.foitt.wallet.platform.actorMetadata.domain.repository.ActorRepos
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.CacheIssuerDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.FetchAndCacheIssuerDisplayData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.FetchAndCacheVerifierDisplayData
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.FetchTrustForVerification
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetActorForScope
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.GetLocalizedActorImageData
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.InitializeActorForScope
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.CacheIssuerDisplayDataImpl
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.FetchAndCacheIssuerDisplayDataImpl
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.FetchAndCacheVerifierDisplayDataImpl
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.FetchTrustForVerificationImpl
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.GetActorForScopeImpl
+import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.GetLocalizedActorImageDataImpl
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.usecase.implementation.InitializeActorForScopeImpl
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.adapter.GetActorUiState
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.adapter.implementation.GetActorUiStateImpl
@@ -54,6 +58,16 @@ internal interface ActorMetadataModule {
     fun bindGetActorForScope(
         useCase: GetActorForScopeImpl
     ): GetActorForScope
+
+    @Binds
+    fun bindFetchTrustForVerification(
+        useCase: FetchTrustForVerificationImpl
+    ): FetchTrustForVerification
+
+    @Binds
+    fun bindGetLocalizedActorImageData(
+        useCase: GetLocalizedActorImageDataImpl
+    ): GetLocalizedActorImageData
 }
 
 @Module

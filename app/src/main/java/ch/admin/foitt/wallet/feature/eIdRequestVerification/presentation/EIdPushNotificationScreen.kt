@@ -24,6 +24,7 @@ import ch.admin.foitt.wallet.platform.composables.presentation.layout.WalletLayo
 import ch.admin.foitt.wallet.platform.composables.presentation.nonFocusableAccessibilityAnchor
 import ch.admin.foitt.wallet.platform.permission.domain.model.NoOpAccompanistPermissionState
 import ch.admin.foitt.wallet.platform.preview.WalletAllScreenPreview
+import ch.admin.foitt.wallet.platform.sdkVersion.isAtLeast
 import ch.admin.foitt.wallet.platform.utils.LocalActivity
 import ch.admin.foitt.wallet.platform.utils.openAppDetailsSettings
 import ch.admin.foitt.wallet.theme.Sizes
@@ -44,7 +45,7 @@ fun EIdPushNotificationScreen(
 
     BackHandler(enabled = true, viewModel::onClose)
 
-    val notificationPermissionState: PermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    val notificationPermissionState: PermissionState = if (isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
         rememberPermissionState(
             permission = Manifest.permission.POST_NOTIFICATIONS,
             onPermissionResult = viewModel::handlePermissionResult,
@@ -62,7 +63,7 @@ fun EIdPushNotificationScreen(
     LaunchedEffect(notificationPermissionState.status) {
         // Android 13+: permission granted auto-setup notification
         // Android 12-: Let the user choose
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && notificationPermissionState.status == PermissionStatus.Granted) {
+        if (isAtLeast(Build.VERSION_CODES.TIRAMISU) && notificationPermissionState.status == PermissionStatus.Granted) {
             viewModel.handlePermissionResult(true)
         }
     }

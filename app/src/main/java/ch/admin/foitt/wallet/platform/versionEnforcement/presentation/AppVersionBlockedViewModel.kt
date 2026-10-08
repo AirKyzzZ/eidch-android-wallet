@@ -16,7 +16,6 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
-import kotlin.system.exitProcess
 
 @HiltViewModel(assistedFactory = AppVersionBlockedViewModel.Factory::class)
 class AppVersionBlockedViewModel @AssistedInject constructor(
@@ -25,7 +24,7 @@ class AppVersionBlockedViewModel @AssistedInject constructor(
     setTopBarState: SetTopBarState,
     @Assisted("title") val initialTitle: String?,
     @Assisted("text") val initialText: String?,
-    @Assisted("playStoreUrl") val playStoreUrl: String?,
+    @Assisted("playStoreUrl") val playStoreUrl: String,
     @Assisted("enforcedType") val enforcedType: EnforcementType
 ) : ScreenViewModel(setTopBarState) {
     override val topBarState = TopBarState.None
@@ -47,21 +46,17 @@ class AppVersionBlockedViewModel @AssistedInject constructor(
         fun create(
             @Assisted("title") title: String?,
             @Assisted("text") text: String?,
-            @Assisted("playStoreUrl") playStoreUrl: String?,
+            @Assisted("playStoreUrl") playStoreUrl: String,
             @Assisted("enforcedType") enforcedType: EnforcementType
         ): AppVersionBlockedViewModel
     }
 
     fun goToPlayStore() {
-        if (playStoreUrl != null) {
-            appContext.openLink(playStoreUrl)
-        } else {
-            appContext.openLink(R.string.version_enforcement_store_link)
-        }
+        appContext.openLink(playStoreUrl)
     }
 
-    fun onClose() {
-        exitProcess(0)
+    fun onSupport() {
+        appContext.openLink(R.string.tk_error_generic_helpLink_value)
     }
 
     fun onSettings() {

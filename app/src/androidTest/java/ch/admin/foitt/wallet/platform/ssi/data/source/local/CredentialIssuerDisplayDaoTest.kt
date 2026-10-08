@@ -10,7 +10,6 @@ import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestD
 import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.credential2
 import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.credentialIssuerDisplay1
 import ch.admin.foitt.wallet.platform.ssi.data.source.local.mock.CredentialTestData.credentialIssuerDisplay2
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -43,14 +42,14 @@ class CredentialIssuerDisplayDaoTest {
 
     @Test(expected = SQLiteConstraintException::class)
     fun insertWithoutMatchingForeignKeyShouldThrow() = runTest {
-        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1.copy(credentialId = -1)))
+        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1.entity.copy(credentialId = -1)))
     }
 
     @Test
     fun getCredentialIssuerDisplaysByIdTest() = runTest {
         credentialDao.insert(credential1)
         credentialDao.insert(credential2)
-        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1, credentialIssuerDisplay2))
+        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1.entity, credentialIssuerDisplay2.entity))
 
         val issuerDisplays = credentialIssuerDisplayDao.getCredentialIssuerDisplaysById(credential2.id)
 

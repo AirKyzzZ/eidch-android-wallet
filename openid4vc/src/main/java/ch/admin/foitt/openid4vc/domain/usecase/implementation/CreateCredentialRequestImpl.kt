@@ -1,6 +1,5 @@
 package ch.admin.foitt.openid4vc.domain.usecase.implementation
 
-import ch.admin.foitt.openid4vc.domain.model.CredentialRequestType
 import ch.admin.foitt.openid4vc.domain.model.CredentialType
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CreateCredentialRequestError
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.CredentialOfferError
@@ -12,8 +11,9 @@ import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.Credential
 import ch.admin.foitt.openid4vc.domain.model.credentialoffer.toCreateCredentialRequestError
 import ch.admin.foitt.openid4vc.domain.model.jwe.CreateJWEError
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
+import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.EncryptionAlgorithm
+import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryption
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionKeyPair
-import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.PayloadEncryptionType
 import ch.admin.foitt.openid4vc.domain.usecase.CreateCredentialRequest
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.CreateJWE
 import ch.admin.foitt.openid4vc.utils.JsonParsingError
@@ -34,65 +34,19 @@ internal class CreateCredentialRequestImpl @Inject constructor(
     private val createJWE: CreateJWE,
 ) : CreateCredentialRequest {
     override suspend fun invoke(
-        payloadEncryptionType: PayloadEncryptionType,
-        credentialType: CredentialType,
-    ): Result<CredentialRequestType, CreateCredentialRequestError> = coroutineBinding {
-        when (payloadEncryptionType) {
-            PayloadEncryptionType.None -> {
-                val request = createJsonCredentialRequest(
-                    credentialType = credentialType,
-                ).bind()
-
-                CredentialRequestType.Json(request)
-            }
-
-            is PayloadEncryptionType.Request -> {
-                val request = createJWECredentialRequest(
-                    credentialType = credentialType,
-                    requestEncryption = payloadEncryptionType.requestEncryption,
-                    credentialResponseEncryption = null,
-                ).bind()
-
-                CredentialRequestType.Jwt(request)
-            }
-
-            is PayloadEncryptionType.Response -> {
-                val credentialRequestCredentialResponseEncryption = createCredentialRequestCredentialResponseEncryption(
-                    payloadEncryptionKeyPair = payloadEncryptionType.responseEncryptionKeyPair,
-                    responseEncryption = payloadEncryptionType.responseEncryption,
-                ).bind()
-
-                val request = createJWECredentialRequest(
-                    credentialType = credentialType,
-                    requestEncryption = payloadEncryptionType.requestEncryption,
-                    credentialResponseEncryption = credentialRequestCredentialResponseEncryption,
-                ).bind()
-
-                CredentialRequestType.Jwt(request)
-            }
-        }
-    }
-
-    private suspend fun createJsonCredentialRequest(
+        payloadEncryption: PayloadEncryption,
         credentialType: CredentialType,
     ): Result<String, CreateCredentialRequestError> = coroutineBinding {
-        val credentialRequest = when (credentialType) {
-            is CredentialType.Verifiable -> VerifiableCredentialRequest(
-                credentialConfigurationId = credentialType.verifiableCredentialParams.credentialConfiguration.identifier,
-                proofs = credentialType.proofs,
-                credentialResponseEncryption = null,
-            )
-            is CredentialType.Deferred -> DeferredCredentialRequest(
-                transactionId = credentialType.transactionId,
-                credentialResponseEncryption = null,
-            )
-        }
+        val credentialRequestCredentialResponseEncryption = createCredentialRequestCredentialResponseEncryption(
+            payloadEncryptionKeyPair = payloadEncryption.responseEncryptionKeyPair,
+            responseEncryption = payloadEncryption.responseEncryption,
+        ).bind()
 
-        val credentialRequestString = safeJson.safeEncodeObjectToString(credentialRequest)
-            .mapError(JsonParsingError::toCreateCredentialRequestError)
-            .bind()
-
-        credentialRequestString
+        createJWECredentialRequest(
+            credentialType = credentialType,
+            requestEncryption = payloadEncryption.requestEncryption,
+            credentialResponseEncryption = credentialRequestCredentialResponseEncryption,
+        ).bind()
     }
 
     /**
@@ -102,7 +56,7 @@ internal class CreateCredentialRequestImpl @Inject constructor(
     private suspend fun createJWECredentialRequest(
         credentialType: CredentialType,
         requestEncryption: CredentialRequestEncryption,
-        credentialResponseEncryption: CredentialRequestCredentialResponseEncryption? = null,
+        credentialResponseEncryption: CredentialRequestCredentialResponseEncryption,
     ): Result<String, CreateCredentialRequestError> = coroutineBinding {
         val credentialRequest = when (credentialType) {
             is CredentialType.Verifiable -> VerifiableCredentialRequest(
@@ -110,6 +64,7 @@ internal class CreateCredentialRequestImpl @Inject constructor(
                 proofs = credentialType.proofs,
                 credentialResponseEncryption = credentialResponseEncryption,
             )
+
             is CredentialType.Deferred -> DeferredCredentialRequest(
                 transactionId = credentialType.transactionId,
                 credentialResponseEncryption = credentialResponseEncryption
@@ -125,9 +80,17 @@ internal class CreateCredentialRequestImpl @Inject constructor(
                 CredentialOfferError.Unexpected(IllegalStateException("Public key algorithm is null"))
             ).bind<String>()
 
+        val encryptionMethod = EncryptionAlgorithm.entries.firstOrNull { encryptionAlgorithm ->
+            encryptionAlgorithm.name in requestEncryption.encValuesSupported
+        } ?: return@coroutineBinding Err(
+            CredentialOfferError.Unexpected(
+                IllegalStateException("No supported enc value in ${requestEncryption.encValuesSupported}")
+            )
+        ).bind<String>()
+
         val jweString = createJWE(
             algorithm = algorithm,
-            encryptionMethod = requestEncryption.encValuesSupported.first(),
+            encryptionMethod = encryptionMethod.name,
             compressionAlgorithm = requestEncryption.zipValuesSupported?.firstOrNull(),
             payload = credentialRequestJsonString,
             encryptionKey = requestEncryption.jwks.keys.first(), // use issuer public key to encrypt

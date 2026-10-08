@@ -2,13 +2,13 @@ package ch.admin.foitt.wallet.platform.navigation.domain.model
 
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import ch.admin.foitt.wallet.platform.activityList.domain.model.ActivityType
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.CompatibleCredential
 import ch.admin.foitt.wallet.platform.credentialPresentation.domain.model.PresentationRequestWithRaw
 import ch.admin.foitt.wallet.platform.eIdApplicationProcess.domain.model.GuardianConsentResultState
 import ch.admin.foitt.wallet.platform.genericScreens.domain.model.GenericErrorScreenState
 import ch.admin.foitt.wallet.platform.invitation.domain.model.InvitationErrorScreenState
 import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportReason
+import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.NonComplianceReportingData
 import ch.admin.foitt.wallet.platform.veranaTrust.domain.model.VeranaTrustEvidence
 import ch.admin.foitt.wallet.platform.verification.domain.model.VerificationMode
 import ch.admin.foitt.wallet.platform.versionEnforcement.domain.model.EnforcementType
@@ -57,6 +57,12 @@ sealed interface Destination : NavKey {
 
     @Serializable
     data class UpdateCredentialScreen(val credentialId: Long) : Destination
+
+    @Serializable
+    data object IssuanceInfoScreen : Destination
+
+    @Serializable
+    data class BatchIssuanceInfoScreen(val credentialId: Long) : Destination
 
     // endregion feature/credentialDetail
     // region feature/deferredDetail
@@ -256,6 +262,8 @@ sealed interface Destination : NavKey {
     @Serializable
     data object EIdNotSupportedDeviceScreen : Destination, DestinationGroup.EIdApplicationProcess
 
+    @Serializable
+    data object EIdExternalDeviceDetectedScreen : Destination, DestinationGroup.EIdApplicationProcess
     // endregion feature/eIdApplicationProcess
     // region feature/eIDRequestVerification
 
@@ -408,7 +416,10 @@ sealed interface Destination : NavKey {
     ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
 
     @Serializable
-    data object PresentationDeclinedScreen : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
+    data class PresentationDeclinedScreen(
+        val redirectUri: String?,
+        val credentialId: Long,
+    ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
 
     @Serializable
     data class PresentationFailureScreen(
@@ -423,16 +434,18 @@ sealed interface Destination : NavKey {
     ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
 
     @Serializable
-    data class PresentationSuccessScreen(val sentFields: List<String>) :
-        Destination,
-        ScopedComponentGroup.Verifier,
-        DestinationGroup.EIdApplicationProcess
+    data class PresentationRequestReviewScreen(
+        val compatibleCredentials: Set<CompatibleCredential>,
+        val presentationRequestWithRaw: PresentationRequestWithRaw,
+    ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
 
     @Serializable
-    data object PresentationValidationErrorScreen :
-        Destination,
-        ScopedComponentGroup.Verifier,
-        DestinationGroup.EIdApplicationProcess
+    data class PresentationSuccessScreen(
+        val redirectUri: String?,
+    ) : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
+
+    @Serializable
+    data object PresentationRequestBlockedScreen : Destination, ScopedComponentGroup.Verifier, DestinationGroup.EIdApplicationProcess
 
     @Serializable
     data object PresentationVerificationErrorScreen :
@@ -472,8 +485,7 @@ sealed interface Destination : NavKey {
 
     @Serializable
     data class NonComplianceListScreen(
-        val activityId: Long,
-        val activityType: ActivityType
+        val reportingData: NonComplianceReportingData,
     ) : Destination
 
     // endregion platform/nonCompliance
@@ -482,7 +494,8 @@ sealed interface Destination : NavKey {
     @Serializable
     data class InvitationFailureScreen(
         val invitationError: InvitationErrorScreenState,
-        val uri: String?
+        val responseUri: String?,
+        val state: String?,
     ) : Destination, ScopedComponentGroup.Verifier
 
     // endregion platform/invitation
@@ -497,17 +510,11 @@ sealed interface Destination : NavKey {
     data class AppVersionBlockedScreen(
         val title: String?,
         val text: String?,
-        val playStoreUrl: String?,
+        val playStoreUrl: String,
         val enforcedType: EnforcementType
     ) : Destination, NoAutoLogout
 
     // endregion platform/versionEnforcement
-    // region platform/reportWrongData
-
-    @Serializable
-    data object ReportWrongDataScreen : Destination
-
-    // endregion platform/reportWrongData
     // region platform/veranaTrust
 
     @Serializable

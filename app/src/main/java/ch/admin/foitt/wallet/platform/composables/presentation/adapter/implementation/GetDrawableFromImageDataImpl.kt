@@ -15,7 +15,7 @@ internal class GetDrawableFromImageDataImpl @Inject constructor(
     private val imageLoader: ImageLoader,
     @param:ApplicationContext private val appContext: Context,
 ) : GetDrawableFromImageData {
-    override suspend fun invoke(imageData: ByteArray): Drawable? = runSuspendCatching {
+    override suspend fun invoke(imageData: ByteArray?): Drawable? = runSuspendCatching {
         val imageRequest = ImageRequest.Builder(appContext)
             .data(imageData)
             .build()
@@ -23,7 +23,7 @@ internal class GetDrawableFromImageDataImpl @Inject constructor(
 
         return result.drawable
     }.getOrElse {
-        Timber.w(t = it, message = "Failed getting Drawable from Url")
+        Timber.w(t = it, message = "Failed getting Drawable from ByteArray")
         null
     }
 }

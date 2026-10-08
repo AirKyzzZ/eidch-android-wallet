@@ -104,8 +104,8 @@ class CredentialDaoTest {
     fun deleteCredentialTest() = runTest {
         credentialDao.insert(credential1)
         verifiableCredentialDao.insert(verifiableCredential1)
-        credentialDisplayDao.insertAll(listOf(credentialDisplay1))
-        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1))
+        credentialDisplayDao.insertAll(listOf(credentialDisplay1.entity))
+        credentialIssuerDisplayDao.insertAll(listOf(credentialIssuerDisplay1.entity))
         credentialClaimClusterEntityDao.insert(cluster1)
         credentialClaimClusterDisplayEntityDao.insert(clusterDisplay1)
         credentialClaimDao.insert(credentialClaim1)
@@ -118,7 +118,11 @@ class CredentialDaoTest {
 
         credentialDao.deleteById(credential1.id)
 
-        assertNull(credentialWithDisplaysAndClustersDao.getNullableVerifiableCredentialWithDisplaysAndClustersFlowById(credential1.id).firstOrNull())
+        assertNull(
+            credentialWithDisplaysAndClustersDao.getNullableVerifiableCredentialWithDisplaysAndClustersFlowById(
+                credential1.id
+            ).firstOrNull()
+        )
         assertEquals(
             emptyList<CredentialIssuerDisplay>(),
             credentialIssuerDisplayDao.getCredentialIssuerDisplaysById(credential1.id)

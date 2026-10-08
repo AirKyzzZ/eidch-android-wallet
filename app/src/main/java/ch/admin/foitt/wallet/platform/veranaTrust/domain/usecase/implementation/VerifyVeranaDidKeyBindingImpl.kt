@@ -41,8 +41,8 @@ class VerifyVeranaDidKeyBindingImpl @Inject constructor(
         return sameCoordinate(field("x"), key.x) && sameCoordinate(field("y"), key.y)
     }
 
-    private fun sameCoordinate(published: String?, presented: String): Boolean {
-        published ?: return false
+    private fun sameCoordinate(published: String?, presented: String?): Boolean {
+        if (published == null || presented == null) return false
         val publishedBytes = runCatching { Base64URL(published).decode() }.getOrNull() ?: return false
         val presentedBytes = runCatching { Base64URL(presented).decode() }.getOrNull() ?: return false
         return publishedBytes.isNotEmpty() && publishedBytes.contentEquals(presentedBytes)

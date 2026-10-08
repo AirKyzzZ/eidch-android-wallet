@@ -16,10 +16,12 @@ import com.lemonappdev.konsist.api.ext.list.withAnnotationOf
 import com.lemonappdev.konsist.api.ext.provider.hasAnnotationOf
 import com.lemonappdev.konsist.api.ext.provider.hasParentOf
 import com.lemonappdev.konsist.api.verify.assertFalse
+import com.lemonappdev.konsist.api.verify.assertNotEmpty
 import com.lemonappdev.konsist.api.verify.assertTrue
 import dagger.Module
 import dagger.assisted.AssistedFactory
 import dagger.multibindings.IntoSet
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
@@ -273,5 +275,20 @@ class GeneralCodingKonsistTest {
 
     private fun KoImportDeclaration.isFunction(): Boolean {
         return this.name.substringAfterLast(".").firstOrNull()?.isLowerCase() == true
+    }
+
+    @Test
+    fun `files attaching the client attestation header use the attestation http client`() = runTest {
+        val filesAttachingAttestationHeader = Konsist
+            .scopeFromProduction()
+            .files
+            .filter { it.text.contains("ClientAttestation.REQUEST_HEADER") }
+
+        filesAttachingAttestationHeader.assertNotEmpty()
+
+        filesAttachingAttestationHeader.assertTrue { file ->
+            file.text.contains("NAMED_CLIENT_ATTESTATION_HTTP_CLIENT") &&
+                !file.text.contains("NAMED_DEFAULT_HTTP_CLIENT")
+        }
     }
 }

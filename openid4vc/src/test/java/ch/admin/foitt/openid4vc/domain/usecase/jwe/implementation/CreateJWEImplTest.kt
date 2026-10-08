@@ -1,10 +1,11 @@
 package ch.admin.foitt.openid4vc.domain.usecase.jwe.implementation
 
 import ch.admin.foitt.openid4vc.domain.model.jwe.JWEError
+import ch.admin.foitt.openid4vc.domain.model.jwe.JweSizeLimits
 import ch.admin.foitt.openid4vc.domain.model.jwk.Jwk
 import ch.admin.foitt.openid4vc.domain.model.payloadEncryption.EncryptionAlgorithm
 import ch.admin.foitt.openid4vc.domain.usecase.jwe.CreateJWE
-import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWE
+import ch.admin.foitt.openid4vc.domain.usecase.jwe.DecryptJWEWithSoftwareKey
 import ch.admin.foitt.openid4vc.util.assertErrorType
 import ch.admin.foitt.openid4vc.util.assertOk
 import com.nimbusds.jose.jwk.Curve.P_256
@@ -24,14 +25,14 @@ import java.security.spec.ECGenParameterSpec
 class CreateJWEImplTest {
 
     private lateinit var createJWE: CreateJWE
-    private lateinit var decryptJWE: DecryptJWE
+    private lateinit var decryptJWEWithSoftwareKey: DecryptJWEWithSoftwareKey
 
     @BeforeEach
     fun setUp() {
         MockKAnnotations.init(this)
 
         createJWE = CreateJWEImpl()
-        decryptJWE = DecryptJWEImpl()
+        decryptJWEWithSoftwareKey = DecryptJWEWithSoftwareKeyImpl()
     }
 
     @AfterEach
@@ -51,9 +52,10 @@ class CreateJWEImplTest {
             encryptionKey = publicKeyJwk,
         ).assertOk()
 
-        val decryptedPayload = decryptJWE(
+        val decryptedPayload = decryptJWEWithSoftwareKey(
             jweString = jwe,
             privateKey = keyPair.private,
+            limits = JweSizeLimits.UNBOUNDED,
         ).assertOk()
 
         assertEquals(payload, decryptedPayload)
@@ -71,9 +73,10 @@ class CreateJWEImplTest {
             encryptionKey = publicKeyJwk,
         ).assertOk()
 
-        val decryptedPayload = decryptJWE(
+        val decryptedPayload = decryptJWEWithSoftwareKey(
             jweString = jwe,
             privateKey = keyPair.private,
+            limits = JweSizeLimits.UNBOUNDED,
         ).assertOk()
 
         assertEquals(payload, decryptedPayload)
@@ -98,6 +101,17 @@ class CreateJWEImplTest {
             compressionAlgorithm = ZIP_VALUE,
             payload = "payload",
             encryptionKey = publicKeyJwk,
+        ).assertErrorType(JWEError.Unexpected::class)
+    }
+
+    @Test
+    fun `Invalid key type returns error`() = runTest {
+        createJWE(
+            algorithm = ALG_VALUE,
+            encryptionMethod = "invalid encryption",
+            compressionAlgorithm = ZIP_VALUE,
+            payload = "payload",
+            encryptionKey = publicKeyJwk.copy(kty = "other"),
         ).assertErrorType(JWEError.Unexpected::class)
     }
 

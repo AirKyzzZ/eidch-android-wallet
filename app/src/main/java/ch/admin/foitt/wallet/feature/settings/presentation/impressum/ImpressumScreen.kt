@@ -113,12 +113,12 @@ private fun PublisherSection(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = Sizes.s04, top = Sizes.s04, end = Sizes.s04),
-        painter = painterResource(id = R.drawable.wallet_ic_bit_info),
+        painter = painterResource(id = R.drawable.wallet_ic_bj_info),
         contentDescription = stringResource(R.string.tk_settings_imprint_publisher_name),
         contentScale = ContentScale.FillWidth,
     )
     WalletListItems.SpecialLinkSettingsItem(
-        title = stringResource(R.string.tk_settings_imprint_publisher_link_text),
+        title = stringResource(R.string.settings_legalNotice_publisher_linkText),
         onClick = onMoreInformation
     )
 }

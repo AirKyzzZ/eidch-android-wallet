@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import ch.admin.foitt.wallet.app.presentation.MainScreen
 import ch.admin.foitt.wallet.platform.navigation.domain.model.EntryProviderInstaller
+import ch.admin.foitt.wallet.platform.sdkVersion.isAtLeast
 import ch.admin.foitt.wallet.platform.userInteraction.domain.usecase.UserInteraction
 import ch.admin.foitt.wallet.platform.utils.LocalIntent
 import dagger.hilt.android.AndroidEntryPoint
@@ -33,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
             this.setRecentsScreenshotEnabled(false)
         }
         currentIntent.value = intent

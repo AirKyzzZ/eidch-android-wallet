@@ -7,7 +7,7 @@ data class DeferredCredentialWithDisplays(
     @Embedded
     val deferredCredential: DeferredCredentialEntity,
     @Relation(
-        entity = CredentialDisplay::class,
+        entity = CredentialDisplayEntity::class,
         parentColumn = "credentialId",
         entityColumn = "credentialId",
     )

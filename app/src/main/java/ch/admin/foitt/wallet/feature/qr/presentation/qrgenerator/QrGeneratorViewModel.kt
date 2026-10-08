@@ -13,8 +13,8 @@ import ch.admin.foitt.wallet.platform.proximity.domain.usecase.GetProximityRepos
 import ch.admin.foitt.wallet.platform.proximity.domain.usecase.ProximityEngagement
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
-import com.github.michaelbull.result.onFailure
-import com.github.michaelbull.result.onSuccess
+import com.github.michaelbull.result.onErr
+import com.github.michaelbull.result.onOk
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
@@ -34,6 +34,8 @@ class QrGeneratorViewModel @Inject constructor(
 
     private val proximityRepository = getProximityRepositoryForScope()
 
+    private var shouldStartEngagement = false
+
     override val topBarState
         get() = when (bluetoothState.value.isReady()) {
             false -> TopBarState.Details(onUp = ::onUp, titleId = null)
@@ -42,29 +44,45 @@ class QrGeneratorViewModel @Inject constructor(
 
     fun onUp() = navManager.popBackStack()
 
-    var proximityEngagementJob: Job? = null
-    val qrCodePayloadMutable = MutableStateFlow<String?>(null)
+    private var proximityEngagementJob: Job? = null
+    private val qrCodePayloadMutable = MutableStateFlow<String?>(null)
     val qrCodePayload = qrCodePayloadMutable.asStateFlow()
 
     init {
         viewModelScope.launch {
-            bluetoothState.collect {
+            bluetoothState.collect { state ->
                 setTopBarState(topBarState)
+                if (state.isReady()) {
+                    tryStartEngagement()
+                }
             }
         }
     }
 
     fun reset() {
+        shouldStartEngagement = false
         proximityEngagementJob?.cancel()
         proximityRepository.reset()
         qrCodePayloadMutable.value = null
     }
 
     fun startEngagementListener() {
-        reset()
+        shouldStartEngagement = true
+        tryStartEngagement()
+    }
+
+    private fun tryStartEngagement() {
+        if (!shouldStartEngagement) return
+        if (!bluetoothState.value.isReady()) return
+        if (proximityEngagementJob?.isActive == true) return
+
+        proximityEngagementJob?.cancel()
+        proximityRepository.reset()
+        qrCodePayloadMutable.value = null
+
         proximityEngagementJob = viewModelScope.launch {
             proximityEngagement().collect {
-                it.onSuccess { event ->
+                it.onOk { event ->
                     when (event) {
                         is ProximityEngagementEvent.QrCode -> {
                             qrCodePayloadMutable.value = event.qrCode
@@ -76,12 +94,14 @@ class QrGeneratorViewModel @Inject constructor(
                                 .navigate()
                         }
                     }
-                }.onFailure { failureResult ->
+                }.onErr { failureResult ->
                     when (failureResult) {
                         is ProximityEngagementError.NoCompatibleCredential -> {
-                            val destination = failureResult.toProcessInvitationError().toErrorDestination(null)
+                            val destination =
+                                failureResult.toProcessInvitationError().toErrorDestination(null, null)
                             navManager.replaceCurrentWith(destination)
                         }
+
                         else -> proximityRepository.decline()
                     }
                 }

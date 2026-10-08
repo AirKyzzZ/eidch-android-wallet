@@ -72,6 +72,25 @@ class GetLocalizedCredentialInformationDisplayImplTest {
         assertNull(useCase(emptyList()))
     }
 
+    @Test
+    fun `Invalid preferred locale does not throw`() = runTest {
+        coEvery { mockGetCurrentAppLocale() } returns LocaleCompat.of("de", "CH")
+
+        val display = useCase(
+            displays = withSupportedLocaleWithCountryCode,
+            preferredLocaleString = "invalid",
+        )
+
+        assertEquals("en", display?.locale)
+    }
+
+    @Test
+    fun `Display with invalid locale does not throw and is ignored`() = runTest {
+        coEvery { mockGetCurrentAppLocale() } returns LocaleCompat.of("de", "CH")
+
+        assertEquals("de-CH", useCase(withInvalidLocale)?.locale)
+    }
+
     val withSupportedLocaleWithCountryCode = listOf("en", "fr", "de-CH", "fallback").map { OidIssuerDisplay(locale = it) }
     val withSupportedLocaleWithDifferentCountryCode = listOf("en", "fr", "de-DE", "fallback").map {
         OidIssuerDisplay(locale = it)
@@ -79,4 +98,5 @@ class GetLocalizedCredentialInformationDisplayImplTest {
     val withSupportedLocaleNoCountryCode = listOf("en", "it", "fallback", "yy").map { OidIssuerDisplay(locale = it) }
     val noSupportedLocaleAndNoFallback = listOf("xx", "yy").map { OidIssuerDisplay(locale = it) }
     val withFallbackAndNoSupportedLocale = listOf("yy", "fallback").map { OidIssuerDisplay(locale = it) }
+    val withInvalidLocale = listOf("-invalid-", "de-CH").map { OidIssuerDisplay(locale = it) }
 }

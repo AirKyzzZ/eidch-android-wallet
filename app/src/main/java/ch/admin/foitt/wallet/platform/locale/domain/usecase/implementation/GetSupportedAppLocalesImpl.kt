@@ -3,8 +3,11 @@ package ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation
 import android.app.LocaleConfig
 import android.content.Context
 import android.os.Build
+import ch.admin.foitt.wallet.BuildConfig
+import ch.admin.foitt.wallet.platform.locale.DebugLocale
 import ch.admin.foitt.wallet.platform.locale.LocaleCompat
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetSupportedAppLocales
+import ch.admin.foitt.wallet.platform.sdkVersion.isAtLeast
 import ch.admin.foitt.wallet.platform.utils.toListOfLocales
 import dagger.hilt.android.qualifiers.ApplicationContext
 import timber.log.Timber
@@ -25,8 +28,8 @@ class GetSupportedAppLocalesImpl @Inject constructor(
     )
 
     override fun invoke(): List<Locale> {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            return supportedLanguagesDefault
+        if (!isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            return supportedLanguagesDefault.withDebugLocale()
         }
 
         // To enable supported locales, add android:localeConfig="@xml/locales_config" into AndroidManifest.xml
@@ -34,6 +37,9 @@ class GetSupportedAppLocalesImpl @Inject constructor(
         return supportedLanguages.ifEmpty {
             Timber.d("No supported languages found, using default list ${supportedLanguagesDefault.map { it.language }}")
             supportedLanguagesDefault
-        }
+        }.withDebugLocale()
     }
+
+    private fun List<Locale>.withDebugLocale(): List<Locale> =
+        if (BuildConfig.DEBUG_LOCALE_ENABLED) this + LocaleCompat.of(DebugLocale.LANGUAGE) else this
 }

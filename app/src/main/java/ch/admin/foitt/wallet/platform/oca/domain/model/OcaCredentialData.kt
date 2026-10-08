@@ -1,5 +1,6 @@
 package ch.admin.foitt.wallet.platform.oca.domain.model
 
+import ch.admin.foitt.openid4vc.domain.model.credentialoffer.metadata.CredentialInformationDisplay
 import kotlinx.serialization.Serializable
 
 /**
@@ -8,10 +9,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class OcaCredentialData(
     val captureBaseDigest: String,
-    val locale: String,
+    override val locale: String,
     val theme: String?,
     val name: String?,
     val description: String?,
     val logoData: String?,
     val backgroundColor: String?,
-)
+) : CredentialInformationDisplay

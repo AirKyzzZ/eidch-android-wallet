@@ -10,9 +10,9 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable(with = TokenTypeSerializer::class)
-enum class TokenType {
-    BEARER,
-    DPOP,
+enum class TokenType(val value: String) {
+    BEARER("Bearer"),
+    DPOP("DPoP"),
 }
 
 object TokenTypeSerializer : KSerializer<TokenType> {
@@ -23,19 +23,11 @@ object TokenTypeSerializer : KSerializer<TokenType> {
 
     override fun deserialize(decoder: Decoder): TokenType {
         val value = decoder.decodeString()
-        return when {
-            value.equals("Bearer", ignoreCase = true) -> TokenType.BEARER
-            value.equals("DPoP", ignoreCase = true) -> TokenType.DPOP
-            else -> throw SerializationException("Unsupported token type: $value")
-        }
+        return TokenType.entries.firstOrNull { it.value.equals(value, ignoreCase = true) }
+            ?: throw SerializationException("Unsupported token type: $value")
     }
 
     override fun serialize(encoder: Encoder, value: TokenType) {
-        encoder.encodeString(
-            when (value) {
-                TokenType.BEARER -> "Bearer"
-                TokenType.DPOP -> "DPoP"
-            }
-        )
+        encoder.encodeString(value.value)
     }
 }

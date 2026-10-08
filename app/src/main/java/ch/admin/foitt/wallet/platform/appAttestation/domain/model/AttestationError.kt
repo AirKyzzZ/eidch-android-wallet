@@ -15,7 +15,7 @@ import ch.admin.foitt.wallet.platform.appAttestation.domain.model.AttestationErr
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.CreateJWSKeyPairError
 import ch.admin.foitt.wallet.platform.keyPairGenerator.domain.model.KeyPairError
 import io.ktor.client.network.sockets.SocketTimeoutException
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 import timber.log.Timber
 import java.io.IOException
@@ -29,6 +29,7 @@ interface AttestationError {
     data class ValidationError(val message: String?) :
         RequestClientAttestationError,
         ValidateClientAttestationError,
+        AppAttestationRepositoryError,
         RequestKeyAttestationError,
         ValidateKeyAttestationError
 
@@ -49,7 +50,8 @@ interface AttestationError {
         ValidateClientAttestationError,
         RequestKeyAttestationError,
         ValidateKeyAttestationError,
-        GenerateProofOfPossessionError
+        GenerateProofOfPossessionError,
+        GetAttestationUrlFromDidError
 }
 
 sealed interface AppAttestationRepositoryError
@@ -59,20 +61,22 @@ sealed interface ValidateClientAttestationError
 sealed interface RequestKeyAttestationError
 sealed interface ValidateKeyAttestationError
 sealed interface GenerateProofOfPossessionError
+sealed interface GetAttestationUrlFromDidError
 
 internal fun Throwable.toAppAttestationRepositoryError(message: String): AppAttestationRepositoryError {
     Timber.e(t = this, message = message)
     return when (this) {
-        is ClientRequestException -> this.toAppAttestationRepositoryError()
+        is ResponseException -> this.toAppAttestationRepositoryError()
         is SocketTimeoutException -> SocketTimeoutError
         is IOException -> NetworkError
         else -> Unexpected(this)
     }
 }
 
-private fun ClientRequestException.toAppAttestationRepositoryError(): AppAttestationRepositoryError {
+private fun ResponseException.toAppAttestationRepositoryError(): AppAttestationRepositoryError {
     return when (this.response.status) {
         HttpStatusCode(418, "Temporary Deactivated") -> SocketTimeoutError
+        HttpStatusCode.ServiceUnavailable -> SocketTimeoutError
         else -> Unexpected(this.cause)
     }
 }
@@ -112,6 +116,7 @@ internal fun ValidateClientAttestationError.toRequestClientAttestationError(): R
 internal fun AppAttestationRepositoryError.toRequestClientAttestationError(): RequestClientAttestationError = when (this) {
     is SocketTimeoutError -> this
     is NetworkError -> this
+    is ValidationError -> this
     is Unexpected -> this
 }
 
@@ -130,6 +135,10 @@ internal fun CreateJwkError.toRequestClientAttestationError(): RequestClientAtte
     is JwkError.UnsupportedCryptographicSuite -> Unexpected(Exception("Unsupported cryptographic key"))
 }
 
+internal fun GetAttestationUrlFromDidError.toRequestKeyAttestationError(): RequestKeyAttestationError = when (this) {
+    is Unexpected -> this
+}
+
 internal fun ValidateKeyAttestationError.toRequestKeyAttestationError(): RequestKeyAttestationError = when (this) {
     is Unexpected -> this
     is ValidationError -> this
@@ -138,6 +147,7 @@ internal fun ValidateKeyAttestationError.toRequestKeyAttestationError(): Request
 internal fun AppAttestationRepositoryError.toRequestKeyAttestationError(): RequestKeyAttestationError = when (this) {
     is SocketTimeoutError -> this
     is NetworkError -> this
+    is ValidationError -> this
     is Unexpected -> this
 }
 
@@ -159,4 +169,9 @@ internal fun RequestKeyAttestationError.toGenerateDPoPKeyPairError(): GenerateDP
     is NetworkError -> GenerateDPoPKeyPairError.NetworkError
     is SocketTimeoutError -> GenerateDPoPKeyPairError.Unexpected(null)
     is Unexpected -> GenerateDPoPKeyPairError.Unexpected(throwable)
+}
+
+fun Throwable.toUnexpected(): Unexpected {
+    Timber.w(t = this)
+    return Unexpected(this)
 }

@@ -2,6 +2,7 @@ package ch.admin.foitt.wallet.platform.ssi.domain.usecase.implementation
 
 import android.content.Context
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.DeferredCredentialWithDisplays
 import ch.admin.foitt.wallet.platform.locale.domain.usecase.GetLocalizedAndThemedDisplay
@@ -115,6 +116,7 @@ class GetDeferredCredentialsWithDetailsFlowImplTest {
     }
 
     private fun setupDefaultMocks() {
+        coEvery { mockAppContext.resources.configuration.isNightModeActive } returns false
         coEvery { mockDeferredCredentialWithDisplaysRepository.getAllFlow() } returns mockCredentialFlow
         coEvery { mockGetLocalizedAndThemedDisplay(any(), any()) } returns credentialDisplay
     }
@@ -125,22 +127,27 @@ class GetDeferredCredentialsWithDetailsFlowImplTest {
         const val ENDPOINT = "endpoint"
         const val ENDPOINT2 = "endpoint2"
         const val NAME = "name"
-        const val LOGO_URI = "logoUri"
+        const val LOGO_HASH = "logoHash"
         const val BACKGROUND_COLOR = "backgroundColor"
         const val LOCALE = "locale"
 
         val credentialDisplay = createCredentialDisplay()
         val credentialDisplay2 = credentialDisplay.copy(
-            credentialId = CREDENTIAL_ID2,
+            entity = credentialDisplay.entity.copy(
+                credentialId = CREDENTIAL_ID2,
+            )
         )
 
         private fun createCredentialDisplay() = CredentialDisplay(
-            id = 1,
-            credentialId = CREDENTIAL_ID,
-            locale = LOCALE,
-            name = NAME,
-            logoUri = LOGO_URI,
-            backgroundColor = BACKGROUND_COLOR,
+            CredentialDisplayEntity(
+                id = 1,
+                credentialId = CREDENTIAL_ID,
+                locale = LOCALE,
+                name = NAME,
+                logoHash = LOGO_HASH,
+                backgroundColor = BACKGROUND_COLOR,
+            ),
+            logo = null
         )
 
         private val deferredCredential = DeferredCredentialEntity(

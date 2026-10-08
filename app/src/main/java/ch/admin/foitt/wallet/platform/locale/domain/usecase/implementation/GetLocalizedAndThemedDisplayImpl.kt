@@ -50,7 +50,7 @@ class GetLocalizedAndThemedDisplayImpl @Inject constructor(
     ): CredentialDisplay? {
         val displays = this.filter { LocaleCompat.ofUnknownFormat(it.locale) == preferredLocale }
 
-        return displays.firstOrNull { it.theme == theme } ?: displays.firstOrNull()
+        return displays.firstOrNull { it.entity.theme == theme } ?: displays.firstOrNull()
     }
 
     /**
@@ -69,7 +69,7 @@ class GetLocalizedAndThemedDisplayImpl @Inject constructor(
             displayLocale.language == preferredLocale.language && displayLocale.country != null
         }
 
-        return displays.firstOrNull { it.theme == theme } ?: displays.firstOrNull()
+        return displays.firstOrNull { it.entity.theme == theme } ?: displays.firstOrNull()
     }
 
     /**
@@ -87,7 +87,7 @@ class GetLocalizedAndThemedDisplayImpl @Inject constructor(
             LocaleCompat.ofUnknownFormat(display.locale).language == preferredLocale.language
         }
 
-        return displays.firstOrNull { it.theme == theme } ?: displays.firstOrNull()
+        return displays.firstOrNull { it.entity.theme == theme } ?: displays.firstOrNull()
     }
 
     /**
@@ -117,6 +117,8 @@ class GetLocalizedAndThemedDisplayImpl @Inject constructor(
             LocaleCompat.ofUnknownFormat(display.locale).toLanguageTag() == bestMatchingLocale?.toLanguageTag()
         }
 
-        return displaysWithBestMatchingLocale.firstOrNull { it.theme == theme } ?: displaysWithBestMatchingLocale.firstOrNull()
+        return displaysWithBestMatchingLocale.firstOrNull {
+            it.entity.theme == theme
+        } ?: displaysWithBestMatchingLocale.firstOrNull()
     }
 }

@@ -93,4 +93,27 @@ class GetLocalizedDisplayImplTest {
         assertNull(getLocalizedDisplay(emptyList()))
         assertNull(getLocalizedDisplay(emptySet()))
     }
+
+    @Test
+    fun `Invalid preferred locale does not throw`() = runTest {
+        coEvery { mockGetCurrentAppLocale() } returns LocaleCompat.of("de", "CH")
+
+        val display = getLocalizedDisplay(
+            displays = LocalizedDisplayTestData.withSupportedLocaleWithCountryCode,
+            preferredLocaleString = "invalid",
+        )
+
+        assertEquals("en", display?.locale)
+    }
+
+    @Test
+    fun `Display with invalid locale does not throw and is ignored`() = runTest {
+        coEvery { mockGetCurrentAppLocale() } returns LocaleCompat.of("de", "CH")
+
+        val display = getLocalizedDisplay(
+            displays = LocalizedDisplayTestData.withInvalidLocale,
+        )
+
+        assertEquals("de-CH", display?.locale)
+    }
 }

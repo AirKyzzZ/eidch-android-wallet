@@ -3,8 +3,7 @@ package ch.admin.foitt.wallet.feature.qr.presentation.qrscan
 import android.content.Context
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.viewModelScope
-import ch.admin.foitt.openid4vc.domain.model.presentationRequest.AuthorizationResponseErrorBody
-import ch.admin.foitt.openid4vc.domain.usecase.DeclinePresentation
+import ch.admin.foitt.wallet.BuildConfig
 import ch.admin.foitt.wallet.feature.qr.domain.model.qrscan.FlashLightState
 import ch.admin.foitt.wallet.feature.qr.infra.qrscan.QrScanner
 import ch.admin.foitt.wallet.platform.appSetupState.domain.usecase.GetFirstCredentialWasAdded
@@ -15,34 +14,36 @@ import ch.admin.foitt.wallet.platform.invitation.domain.model.toErrorDestination
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.HandleInvitationProcessingSuccess
 import ch.admin.foitt.wallet.platform.invitation.domain.usecase.ProcessInvitation
 import ch.admin.foitt.wallet.platform.navigation.NavigationManager
-import ch.admin.foitt.wallet.platform.permission.domain.model.BluetoothState
 import ch.admin.foitt.wallet.platform.permission.domain.model.CameraState
 import ch.admin.foitt.wallet.platform.permission.presentation.bluetooth.BluetoothPermissionViewModel
 import ch.admin.foitt.wallet.platform.proximity.domain.usecase.GetProximityRepositoryForScope
 import ch.admin.foitt.wallet.platform.scaffold.domain.model.TopBarState
 import ch.admin.foitt.wallet.platform.scaffold.domain.usecase.SetTopBarState
 import ch.admin.foitt.wallet.platform.scaffold.extension.hasCameraPermission
-import com.github.michaelbull.result.onFailure
-import com.github.michaelbull.result.onSuccess
+import com.github.michaelbull.result.onErr
+import com.github.michaelbull.result.onOk
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.net.URI
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class QrScannerViewModel @Inject constructor(
     @param:ApplicationContext private val appContext: Context,
     private val processInvitation: ProcessInvitation,
     private val handleInvitationProcessingSuccess: HandleInvitationProcessingSuccess,
-    private val declinePresentation: DeclinePresentation,
     private val qrScanner: QrScanner,
     private val navManager: NavigationManager,
     private val getFirstCredentialWasAdded: GetFirstCredentialWasAdded,
@@ -58,22 +59,29 @@ class QrScannerViewModel @Inject constructor(
     private val cameraStateMutable = MutableStateFlow(
         CameraState(isPermissionGranted = hasCameraPermission(appContext))
     )
-    private val cameraState = cameraStateMutable.asStateFlow()
 
-    val isCameraRunning = combine(bluetoothState, cameraState) { bluetooth: BluetoothState, camera: CameraState ->
-        (isProximityEngagementEnabled.not() || bluetooth.isReady()) && camera.isPermissionGranted
+    private val isBluetoothPermissionRequiredMutable = MutableStateFlow(false)
+    val isBluetoothPermissionRequired = isBluetoothPermissionRequiredMutable.asStateFlow()
+
+    val isCameraRunning = combine(cameraStateMutable, isBluetoothPermissionRequiredMutable) { cameraState, isBloothPermissionRequired ->
+        cameraState.isPermissionGranted && isBloothPermissionRequired.not()
     }.toStateFlow(false)
 
+    private var pendingProximityInvitationUri: String? = null
+
     override val topBarState
-        get() = when (isCameraRunning.value) {
-            true -> TopBarState.None
-            false -> TopBarState.Details(onUp = ::onUp, titleId = null)
+        get() = when {
+            isCameraRunning.value -> TopBarState.None
+            else -> TopBarState.Details(onUp = ::onUp, titleId = null)
         }
 
     val flashLightState = qrScanner.flashLightState
 
     private val _infoState = MutableStateFlow<QrInfoState>(QrInfoState.Empty)
     val infoState = _infoState.asStateFlow()
+
+    private val _hapticEvent = MutableSharedFlow<QrScannerEvent>()
+    val hapticEvent = _hapticEvent.asSharedFlow()
 
     private var job: Job? = null
 
@@ -85,6 +93,8 @@ class QrScannerViewModel @Inject constructor(
 
     fun reset() {
         job?.cancel()
+        pendingProximityInvitationUri = null
+        isBluetoothPermissionRequiredMutable.value = false
         proximityRepository.reset()
         viewModelScope.launch {
             if (flashLightState.value == FlashLightState.ON) {
@@ -95,7 +105,7 @@ class QrScannerViewModel @Inject constructor(
     }
 
     fun onInitScan(previewView: PreviewView) {
-        qrScanner.registerScanner(previewView).onFailure { throwable ->
+        qrScanner.registerScanner(previewView).onErr { throwable ->
             _infoState.update { QrInfoState.UnexpectedError }
             Timber.e(t = throwable, message = "ValidationFailure while registering scanner")
         }
@@ -105,16 +115,29 @@ class QrScannerViewModel @Inject constructor(
         if (job?.isActive == true) {
             return
         }
+
+        val invitationUri = barcodesContent.firstOrNull() ?: ""
+
+        if (isProximityEngagementEnabled && isProximityScheme(invitationUri) && !bluetoothState.value.isReady()) {
+            qrScanner.pauseScanner()
+            pendingProximityInvitationUri = invitationUri
+            isBluetoothPermissionRequiredMutable.value = true
+            return
+        }
+
+        viewModelScope.launch {
+            _hapticEvent.emit(QrScannerEvent.ScanSuccess)
+        }
+
         qrScanner.pauseScanner()
         _infoState.update { QrInfoState.Loading }
         job = viewModelScope.launch {
-            val invitationUri = barcodesContent.firstOrNull() ?: ""
             processInvitation(invitationUri = invitationUri)
-                .onSuccess { invitation ->
+                .onOk { invitation ->
                     job?.ensureActive()
                     handleInvitationProcessingSuccess(invitation).navigate()
                 }
-                .onFailure { invitationError ->
+                .onErr { invitationError ->
                     job?.ensureActive()
                     handleProcessingFailure(invitationError)
                 }
@@ -128,63 +151,97 @@ class QrScannerViewModel @Inject constructor(
         }
     }
 
+    private fun isProximityScheme(uri: String): Boolean {
+        return try {
+            URI(uri).scheme == BuildConfig.SCHEME_PRESENTATION_REQUEST_PROXIMITY
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     private suspend fun handleProcessingFailure(failureResult: ProcessInvitationError) {
         _infoState.update { failureResult.toQrInfoState() }
 
         if (proximityRepository.isPresentationStarted) {
-            when (failureResult) {
-                is InvitationError.NoCompatibleCredential,
-                is InvitationError.EmptyWallet -> navigateToInvitationFailureError(failureResult, null)
-                else -> proximityRepository.decline()
-            }
+            handleProximityError(failureResult)
         } else {
-            when (failureResult) {
-                is InvitationError.InvalidPresentation -> declinePresentation(
-                    url = failureResult.responseUri,
-                    reason = AuthorizationResponseErrorBody.ErrorType.INVALID_REQUEST
-                )
-                is InvitationError.InvalidTransactionData -> {
-                    declinePresentation(
-                        url = failureResult.responseUri,
-                        reason = AuthorizationResponseErrorBody.ErrorType.INVALID_REQUEST
-                    )
-                    navigateToInvitationFailureError(failureResult, failureResult.responseUri)
-                }
-                is InvitationError.InvalidClientPresentation -> {
-                    declinePresentation(
-                        url = failureResult.responseUri,
-                        reason = AuthorizationResponseErrorBody.ErrorType.INVALID_CLIENT
-                    )
-                    navigateToInvitationFailureError(failureResult, failureResult.responseUri)
-                }
-                is InvitationError.EmptyWallet -> navigateToInvitationFailureError(failureResult, failureResult.responseUri)
-                is InvitationError.NoCompatibleCredential -> navigateToInvitationFailureError(failureResult, failureResult.responseUri)
-                InvitationError.CredentialRequestDenied,
-                InvitationError.InsufficientScope,
-                InvitationError.InvalidClient,
-                InvitationError.InvalidCredentialRequest,
-                InvitationError.InvalidEncryptionParameters,
-                InvitationError.InvalidNonce,
-                InvitationError.InvalidProof,
-                InvitationError.InvalidRequest,
-                InvitationError.InvalidRequestBearerToken,
-                InvitationError.InvalidToken,
-                InvitationError.UnauthorizedClient,
-                InvitationError.UnauthorizedGrantType,
-                InvitationError.UnknownCredentialIdentifier,
-                InvitationError.UnknownCredentialConfiguration -> navigateToInvitationFailureError(failureResult, null)
-
-                else -> {}
-            }
+            handleQrError(failureResult)
         }
-        delay(DELAY_SCANNING_IN_MS)
+
+        delay(DELAY_SCANNING_IN_MS.milliseconds)
         if (infoState.value !is QrInfoState.Loading) {
             qrScanner.resumeScanner()
         }
     }
 
-    private fun navigateToInvitationFailureError(failureResult: ProcessInvitationError, uri: String?) {
-        val destination = failureResult.toErrorDestination(uri)
+    private fun handleProximityError(failureResult: ProcessInvitationError) = when (failureResult) {
+        is InvitationError.NoCompatibleCredential,
+        is InvitationError.EmptyWallet -> navigateToInvitationFailureError(failureResult, null, null)
+
+        else -> proximityRepository.decline()
+    }
+
+    private fun handleQrError(failureResult: ProcessInvitationError) = when (failureResult) {
+        is InvitationError.InvalidPresentation -> navigateToInvitationFailureError(
+            failureResult,
+            failureResult.responseUri,
+            failureResult.state
+        )
+
+        is InvitationError.InvalidTransactionData -> navigateToInvitationFailureError(
+            failureResult,
+            failureResult.responseUri,
+            failureResult.state
+        )
+
+        is InvitationError.InvalidClientPresentation -> navigateToInvitationFailureError(
+            failureResult,
+            failureResult.responseUri,
+            failureResult.state
+        )
+
+        is InvitationError.EmptyWallet -> navigateToInvitationFailureError(failureResult, failureResult.responseUri, failureResult.state)
+        is InvitationError.NoCompatibleCredential -> navigateToInvitationFailureError(
+            failureResult,
+            failureResult.responseUri,
+            failureResult.state
+        )
+
+        InvitationError.CredentialRequestDenied,
+        InvitationError.InsufficientScope,
+        InvitationError.InvalidClient,
+        InvitationError.InvalidCredentialRequest,
+        InvitationError.InvalidEncryptionParameters,
+        InvitationError.InvalidNonce,
+        InvitationError.InvalidProof,
+        InvitationError.InvalidRequest,
+        InvitationError.InvalidRequestBearerToken,
+        InvitationError.InvalidToken,
+        InvitationError.UnauthorizedClient,
+        InvitationError.UnauthorizedGrantType,
+        InvitationError.UnknownCredentialIdentifier,
+        InvitationError.UnknownCredentialConfiguration -> navigateToInvitationFailureError(failureResult, null, null)
+
+        InvitationError.UnverifiedIssuer,
+        InvitationError.UnauthorizedIssuance -> navigateToInvitationFailureError(failureResult, null, null)
+
+        is InvitationError.UnverifiedVerifier -> navigateToInvitationFailureError(
+            failureResult,
+            failureResult.responseUri,
+            failureResult.state
+        )
+
+        is InvitationError.UnknownRegistry -> navigateToInvitationFailureError(
+            failureResult,
+            failureResult.responseUri,
+            failureResult.state
+        )
+
+        else -> {}
+    }
+
+    private fun navigateToInvitationFailureError(failureResult: ProcessInvitationError, responseUri: String?, state: String?) {
+        val destination = failureResult.toErrorDestination(responseUri, state)
         navManager.replaceCurrentWith(destination)
     }
 
@@ -250,6 +307,11 @@ class QrScannerViewModel @Inject constructor(
         InvitationError.UnauthorizedGrantType,
         InvitationError.UnknownCredentialConfiguration,
         InvitationError.UnknownCredentialIdentifier -> QrInfoState.Empty
+
+        is InvitationError.UnverifiedIssuer,
+        is InvitationError.UnverifiedVerifier,
+        is InvitationError.UnauthorizedIssuance,
+        is InvitationError.UnknownRegistry -> QrInfoState.Empty // -> go to generic error screen
     }
 
     fun onCameraStateChange() {
@@ -257,6 +319,7 @@ class QrScannerViewModel @Inject constructor(
     }
 
     init {
+        updateBluetoothState(appContext)
         viewModelScope.launch {
             isCameraRunning.collect { isReady ->
                 if (isReady) {
@@ -266,6 +329,44 @@ class QrScannerViewModel @Inject constructor(
         }
         viewModelScope.launch {
             initQrInfoHint()
+        }
+        viewModelScope.launch {
+            bluetoothState.collect { state ->
+                if (state.isReady() && isBluetoothPermissionRequired.value && pendingProximityInvitationUri != null) {
+                    val uri = pendingProximityInvitationUri!!
+                    pendingProximityInvitationUri = null
+                    isBluetoothPermissionRequiredMutable.value = false
+                    retryProximityInvitation(uri)
+                }
+            }
+        }
+    }
+
+    private fun retryProximityInvitation(invitationUri: String) {
+        if (job?.isActive == true) {
+            return
+        }
+        viewModelScope.launch {
+            _hapticEvent.emit(QrScannerEvent.ScanSuccess)
+        }
+        _infoState.update { QrInfoState.Loading }
+        job = viewModelScope.launch {
+            processInvitation(invitationUri = invitationUri)
+                .onOk { invitation ->
+                    job?.ensureActive()
+                    handleInvitationProcessingSuccess(invitation).navigate()
+                }
+                .onErr { invitationError ->
+                    job?.ensureActive()
+                    handleProcessingFailure(invitationError)
+                }
+        }.apply {
+            invokeOnCompletion {
+                this@QrScannerViewModel.job = null
+                if (infoState.value is QrInfoState.Loading) {
+                    _infoState.update { QrInfoState.Empty }
+                }
+            }
         }
     }
 

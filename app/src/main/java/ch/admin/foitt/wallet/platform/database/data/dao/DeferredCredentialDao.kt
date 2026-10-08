@@ -26,6 +26,9 @@ interface DeferredCredentialDao {
     @Query("SELECT * FROM DeferredCredentialEntity")
     fun getAll(): List<DeferredCredentialWithAuthenticationAndKeyBinding>
 
+    @Query("SELECT credentialId FROM DeferredCredentialEntity")
+    fun getAllIds(): List<Long>
+
     @Transaction
     @Query(
         """

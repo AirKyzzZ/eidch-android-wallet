@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,11 +43,9 @@ import ch.admin.foitt.wallet.feature.credentialOffer.presentation.model.Credenti
 import ch.admin.foitt.wallet.platform.actorMetadata.domain.model.ActorType
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.InvitationHeader
 import ch.admin.foitt.wallet.platform.actorMetadata.presentation.model.ActorUiState
-import ch.admin.foitt.wallet.platform.badges.domain.model.BadgeType
 import ch.admin.foitt.wallet.platform.badges.presentation.BadgeBottomSheet
 import ch.admin.foitt.wallet.platform.composables.AdaptiveBottomButtonBar
 import ch.admin.foitt.wallet.platform.composables.Buttons
-import ch.admin.foitt.wallet.platform.composables.ConfirmationBottomSheet
 import ch.admin.foitt.wallet.platform.composables.LoadingOverlay
 import ch.admin.foitt.wallet.platform.composables.presentation.HeightReportingLayout
 import ch.admin.foitt.wallet.platform.composables.presentation.WindowWidthClass
@@ -60,9 +58,9 @@ import ch.admin.foitt.wallet.platform.credential.presentation.MediumCredentialCa
 import ch.admin.foitt.wallet.platform.credential.presentation.credentialElements
 import ch.admin.foitt.wallet.platform.credential.presentation.mock.CredentialMocks
 import ch.admin.foitt.wallet.platform.credential.presentation.model.CredentialCardState
-import ch.admin.foitt.wallet.platform.nonCompliance.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.preview.AllCompactScreensPreview
 import ch.admin.foitt.wallet.platform.preview.AllLargeScreensPreview
+import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.ActorComplianceState
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.TrustStatus
 import ch.admin.foitt.wallet.platform.trustRegistry.domain.model.VcSchemaTrustStatus
 import ch.admin.foitt.wallet.platform.utils.TestTags
@@ -94,7 +92,7 @@ fun CredentialOfferScreen(
     LaunchedEffect(uiMode) {
         viewModel.credentialOfferUiState.refreshData()
     }
-
+    val credentialUiState = viewModel.credentialOfferUiState.stateFlow.collectAsStateWithLifecycle().value
     val badgeBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val badgeBottomSheet = viewModel.badgeBottomSheet.collectAsStateWithLifecycle().value
     if (badgeBottomSheet != null) {
@@ -105,30 +103,15 @@ fun CredentialOfferScreen(
         )
     }
 
-    val confirmationBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val showConfirmationBottomSheet = viewModel.showConfirmationBottomSheet.collectAsStateWithLifecycle().value
-    if (showConfirmationBottomSheet) {
-        ConfirmationBottomSheet(
-            sheetState = confirmationBottomSheetState,
-            title = R.string.tk_receive_credentialOffer_confirmIssuance_primary,
-            body = R.string.tk_receive_credentialOffer_confirmIssuance_secondary,
-            acceptButtonText = R.string.tk_receive_credentialOffer_confirmIssuance_button_primary,
-            declineButtonText = R.string.tk_receive_credentialOffer_confirmIssuance_button_secondary,
-            onAccept = viewModel::acceptCredential,
-            onDecline = viewModel::onDeclineBottomSheet,
-            onDismiss = viewModel::onDismissConfirmationBottomSheet,
-        )
-    }
-
     CredentialOfferScreenContent(
         isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value,
         isVeranaTrustLoading = viewModel.isVeranaTrustLoading.collectAsStateWithLifecycle().value,
-        credentialOfferUiState = viewModel.credentialOfferUiState.stateFlow.collectAsStateWithLifecycle().value,
+        credentialOfferUiState = credentialUiState,
         announcementAxMessage = announcementAxMessage,
-        onBadge = viewModel::onBadge,
+        onActorNameTap = viewModel::onActorNameTap,
+        onReportedActorInfo = viewModel::onReportedActorInfo,
         onAccept = viewModel::onAcceptClicked,
         onDecline = viewModel::onDeclineClicked,
-        onWrongData = viewModel::onReportWrongDataClicked,
         onVeranaTrustDetails = viewModel::onVeranaTrustDetails,
         onRetryVeranaTrust = viewModel::onRetryVeranaTrust,
     )
@@ -140,10 +123,10 @@ private fun CredentialOfferScreenContent(
     isVeranaTrustLoading: Boolean,
     credentialOfferUiState: CredentialOfferUiState,
     announcementAxMessage: String?,
-    onBadge: (BadgeType) -> Unit,
+    onActorNameTap: () -> Unit,
+    onReportedActorInfo: () -> Unit,
     onAccept: () -> Unit,
     onDecline: () -> Unit,
-    onWrongData: () -> Unit,
     onVeranaTrustDetails: () -> Unit,
     onRetryVeranaTrust: () -> Unit,
 ) = Box(
@@ -162,14 +145,14 @@ private fun CredentialOfferScreenContent(
             }
         )
 ) {
-    when (currentWindowAdaptiveInfo().windowWidthClass()) {
+    when (currentWindowAdaptiveInfoV2().windowWidthClass()) {
         WindowWidthClass.COMPACT -> CompactContent(
             credentialOffer = credentialOfferUiState,
             isVeranaTrustLoading = isVeranaTrustLoading,
-            onBadge = onBadge,
+            onActorNameTap = onActorNameTap,
+            onReportedActorInfo = onReportedActorInfo,
             onAccept = onAccept,
             onDecline = onDecline,
-            onWrongData = onWrongData,
             onVeranaTrustDetails = onVeranaTrustDetails,
             onRetryVeranaTrust = onRetryVeranaTrust,
         )
@@ -177,10 +160,10 @@ private fun CredentialOfferScreenContent(
         else -> LargeContent(
             credentialOffer = credentialOfferUiState,
             isVeranaTrustLoading = isVeranaTrustLoading,
-            onBadge = onBadge,
+            onActorNameTap = onActorNameTap,
+            onReportedActorInfo = onReportedActorInfo,
             onAccept = onAccept,
             onDecline = onDecline,
-            onWrongData = onWrongData,
             onVeranaTrustDetails = onVeranaTrustDetails,
             onRetryVeranaTrust = onRetryVeranaTrust,
         )
@@ -192,10 +175,10 @@ private fun CredentialOfferScreenContent(
 private fun CompactContent(
     credentialOffer: CredentialOfferUiState,
     isVeranaTrustLoading: Boolean,
-    onBadge: (BadgeType) -> Unit,
+    onActorNameTap: () -> Unit,
+    onReportedActorInfo: () -> Unit,
     onAccept: () -> Unit,
     onDecline: () -> Unit,
-    onWrongData: () -> Unit,
     onVeranaTrustDetails: () -> Unit,
     onRetryVeranaTrust: () -> Unit,
 ) {
@@ -216,7 +199,8 @@ private fun CompactContent(
             item {
                 InvitationHeader(
                     actorUiState = credentialOffer.issuer,
-                    onBadge = onBadge,
+                    onActorNameTap = onActorNameTap,
+                    onReportedActorInfo = onReportedActorInfo
                 )
             }
             item {
@@ -247,10 +231,8 @@ private fun CompactContent(
 
             credentialElements(
                 elements = credentialOffer.claims,
-                onWrongData = onWrongData,
             )
         }
-
         StickyButtons(
             onAccept = onAccept,
             onDecline = onDecline,
@@ -290,10 +272,10 @@ private fun CredentialBoxCompact(
 private fun LargeContent(
     credentialOffer: CredentialOfferUiState,
     isVeranaTrustLoading: Boolean,
-    onBadge: (BadgeType) -> Unit,
+    onActorNameTap: () -> Unit,
+    onReportedActorInfo: () -> Unit,
     onAccept: () -> Unit,
     onDecline: () -> Unit,
-    onWrongData: () -> Unit,
     onVeranaTrustDetails: () -> Unit,
     onRetryVeranaTrust: () -> Unit,
 ) {
@@ -308,10 +290,10 @@ private fun LargeContent(
             DetailsWithHeader(
                 credentialOffer = credentialOffer,
                 isVeranaTrustLoading = isVeranaTrustLoading,
-                onBadge = onBadge,
+                onActorNameTap = onActorNameTap,
+                onReportedActorInfo = onReportedActorInfo,
                 onAccept = onAccept,
                 onDecline = onDecline,
-                onWrongData = onWrongData,
                 onVeranaTrustDetails = onVeranaTrustDetails,
                 onRetryVeranaTrust = onRetryVeranaTrust,
             )
@@ -349,10 +331,10 @@ private fun CredentialBoxLarge(
 private fun DetailsWithHeader(
     credentialOffer: CredentialOfferUiState,
     isVeranaTrustLoading: Boolean,
-    onBadge: (BadgeType) -> Unit,
+    onActorNameTap: () -> Unit,
+    onReportedActorInfo: () -> Unit,
     onAccept: () -> Unit,
     onDecline: () -> Unit,
-    onWrongData: () -> Unit,
     onVeranaTrustDetails: () -> Unit,
     onRetryVeranaTrust: () -> Unit,
 ) {
@@ -369,7 +351,8 @@ private fun DetailsWithHeader(
             item {
                 InvitationHeader(
                     actorUiState = credentialOffer.issuer,
-                    onBadge = onBadge,
+                    onActorNameTap = onActorNameTap,
+                    onReportedActorInfo = onReportedActorInfo
                 )
             }
 
@@ -395,7 +378,6 @@ private fun DetailsWithHeader(
 
             credentialElements(
                 elements = credentialOffer.claims,
-                onWrongData = onWrongData,
             )
         }
 
@@ -472,10 +454,10 @@ private fun CredentialOfferScreenPreview() {
                 claims = CredentialMocks.clusterList,
             ),
             announcementAxMessage = null,
-            onBadge = {},
+            onActorNameTap = {},
+            onReportedActorInfo = {},
             onAccept = {},
             onDecline = {},
-            onWrongData = {},
             onVeranaTrustDetails = {},
             onRetryVeranaTrust = {},
         )
@@ -501,10 +483,10 @@ private fun CredentialOfferLargeContentPreview() {
                 claims = CredentialMocks.clusterList,
             ),
             isVeranaTrustLoading = false,
-            onBadge = {},
+            onActorNameTap = {},
+            onReportedActorInfo = {},
             onAccept = {},
             onDecline = {},
-            onWrongData = {},
             onVeranaTrustDetails = {},
             onRetryVeranaTrust = {},
         )

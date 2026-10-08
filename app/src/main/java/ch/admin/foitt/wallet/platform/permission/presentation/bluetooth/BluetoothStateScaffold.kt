@@ -71,19 +71,16 @@ fun BluetoothStateScaffold(
             Manifest.permission.BLUETOOTH_ADVERTISE,
             Manifest.permission.BLUETOOTH_CONNECT,
         ),
-        permissionRationaleContent = { onHandled ->
-            updateContentShown(false)
-            BluetoothPermissionRationalScreenContent(
-                onOpenSettings = {
-                    context.openAppDetailsSettings()
-                    onHandled()
-                },
-            )
-        },
         permissionNotGrantedContent = { handler ->
             updateContentShown(false)
             BluetoothPermissionNotGrantedScreenContent(
                 onAllow = handler::requestPermission,
+            )
+        },
+        permissionRationaleContent = {
+            updateContentShown(false)
+            BluetoothPermissionRationalScreenContent(
+                onOpenSettings = { context.openAppDetailsSettings() }
             )
         },
         permissionGrantedContent = {

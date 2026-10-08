@@ -1,6 +1,7 @@
 package ch.admin.foitt.wallet.platform.locale.domain.usecase.implementation
 
 import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplay
+import ch.admin.foitt.wallet.platform.database.domain.model.CredentialDisplayEntity
 import ch.admin.foitt.wallet.platform.database.domain.model.LocalizedDisplay
 
 // Test data
@@ -18,6 +19,7 @@ internal object LocalizedDisplayTestData {
     val withSupportedLocaleNoCountryCode = listOf("en", "it", "fallback", "yy").map { MockLocalizedDisplay(locale = it) }
     val noSupportedLocaleAndNoFallback = listOf("xx", "yy").map { MockLocalizedDisplay(locale = it) }
     val withFallbackAndNoSupportedLocale = listOf("yy", "fallback").map { MockLocalizedDisplay(locale = it) }
+    val withInvalidLocale = listOf("-invalid-", "de-CH").map { MockLocalizedDisplay(it) }
 }
 
 internal object LocalizedAndThemedDisplayTestData {
@@ -37,10 +39,16 @@ internal object LocalizedAndThemedDisplayTestData {
     val withFallbackAndNoSupportedLocale = listOf("yy", "fallback").map {
         createCredentialDisplay(it)
     }
+    val withInvalidLocale = listOf("-invalid-", "de-CH").map {
+        createCredentialDisplay(it)
+    }
 }
 
 private fun createCredentialDisplay(locale: String) = CredentialDisplay(
-    credentialId = 1,
-    locale = locale,
-    theme = "dark"
+    CredentialDisplayEntity(
+        credentialId = 1,
+        locale = locale,
+        theme = "dark"
+    ),
+    logo = null
 )
