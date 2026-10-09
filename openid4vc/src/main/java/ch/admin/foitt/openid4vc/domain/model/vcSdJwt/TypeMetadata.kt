@@ -1,7 +1,9 @@
 package ch.admin.foitt.openid4vc.domain.model.vcSdJwt
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
 /**
  * reference: https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-05.html#name-display-metadata
@@ -26,9 +28,11 @@ data class TypeMetadata(
     val schemaUriIntegrity: String?,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class TypeMetadataDisplay(
     @SerialName("lang")
+    @JsonNames("locale")
     val lang: String,
     @SerialName("name")
     val name: String,
